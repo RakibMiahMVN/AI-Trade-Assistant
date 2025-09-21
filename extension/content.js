@@ -25,8 +25,665 @@ style.textContent = `
       opacity: 0;
     }
   }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
 `;
 document.head.appendChild(style);
+
+// Create and add a floating summary button to the right center of the screen
+function addSummaryButton() {
+  // Check if button already exists
+  if (document.getElementById('ai-summary-button')) return;
+  
+  const summaryButton = document.createElement('button');
+  summaryButton.id = 'ai-summary-button';
+  summaryButton.textContent = '📝';
+  summaryButton.title = 'Generate AI conversation summary';
+  summaryButton.style.cssText = `
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2196F3, #3F51B5);
+    color: white;
+    border: none;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  `;
+  
+  // Add hover effects
+  summaryButton.onmouseover = () => {
+    summaryButton.style.transform = 'translateY(-50%) scale(1.1)';
+    summaryButton.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.4)';
+  };
+  
+  summaryButton.onmouseout = () => {
+    summaryButton.style.transform = 'translateY(-50%)';
+    summaryButton.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.3)';
+  };
+  
+  // Add click event
+  summaryButton.onclick = showSummaryModal;
+  
+  document.body.appendChild(summaryButton);
+}
+
+// Call the function to add the summary button when content script loads
+addSummaryButton();
+
+// Create and display the summary modal
+function showSummaryModal() {
+  // Check if modal already exists and remove it
+  const existingModal = document.getElementById('ai-summary-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Create modal container
+  const modal = document.createElement('div');
+  modal.id = 'ai-summary-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+    animation: fadeIn 0.3s ease;
+  `;
+  
+  // Create modal content
+  const modalContent = document.createElement('div');
+  modalContent.style.cssText = `
+    background-color: white;
+    width: 80%;
+    max-width: 650px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    padding: 25px;
+    position: relative;
+    animation: scaleIn 0.3s ease;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    background: linear-gradient(to bottom, #ffffff, #f7f9fc);
+  `;
+  
+  // Create header
+  const header = document.createElement('div');
+  header.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid rgba(33, 150, 243, 0.2);
+    padding-bottom: 15px;
+  `;
+  
+  // Add title
+  const title = document.createElement('h3');
+  title.innerHTML = '📝 <span style="background: linear-gradient(45deg, #2196F3, #3F51B5); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI Conversation Summary</span>';
+  title.style.cssText = `
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  `;
+  
+  // Create a container for the buttons
+  const buttonsContainer = document.createElement('div');
+  buttonsContainer.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  `;
+  
+  // Add copy button
+  const copyButton = document.createElement('button');
+  copyButton.innerHTML = '📋';
+  copyButton.title = 'Copy summary to clipboard';
+  copyButton.id = 'ai-summary-copy-btn';
+  copyButton.style.cssText = `
+    background: linear-gradient(45deg, #4CAF50, #8BC34A);
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+  `;
+  
+  // Add hover effects for copy button
+  copyButton.onmouseover = () => {
+    copyButton.style.transform = 'scale(1.1)';
+    copyButton.style.boxShadow = '0 3px 7px rgba(0,0,0,0.3)';
+  };
+  
+  copyButton.onmouseout = () => {
+    copyButton.style.transform = 'scale(1)';
+    copyButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+  };
+  
+  // Add click event for copy button
+  copyButton.onclick = () => {
+    copySummaryToClipboard();
+  };
+  
+  // Add close button
+  const closeButton = document.createElement('button');
+  closeButton.innerHTML = '✕';
+  closeButton.style.cssText = `
+    background: linear-gradient(45deg, #ff6b35, #ff9d5c);
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+  `;
+  
+  // Add hover effects for close button
+  closeButton.onmouseover = () => {
+    closeButton.style.transform = 'scale(1.1)';
+    closeButton.style.boxShadow = '0 3px 7px rgba(0,0,0,0.3)';
+  };
+  
+  closeButton.onmouseout = () => {
+    closeButton.style.transform = 'scale(1)';
+    closeButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+  };
+  closeButton.onclick = () => {
+    modal.remove();
+  };
+  
+  // Add content area
+  const contentArea = document.createElement('div');
+  contentArea.id = 'ai-summary-content';
+  contentArea.style.cssText = `
+    padding: 15px;
+    margin-bottom: 20px;
+    min-height: 150px;
+    max-height: 450px;
+    overflow-y: auto;
+    border: 1px solid rgba(33, 150, 243, 0.2);
+    border-radius: 12px;
+    background-color: rgba(249, 251, 255, 0.8);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #2196F3 #f1f1f1;
+  `;
+  
+  // Add custom scrollbar styling
+  const scrollbarStyle = document.createElement('style');
+  scrollbarStyle.textContent = `
+    #ai-summary-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    #ai-summary-content::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    #ai-summary-content::-webkit-scrollbar-thumb {
+      background: linear-gradient(45deg, #2196F3, #3F51B5);
+      border-radius: 10px;
+    }
+    
+    #ai-summary-content::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(45deg, #1976D2, #303F9F);
+    }
+  `;
+  document.head.appendChild(scrollbarStyle);
+  
+  // Add enhanced loading spinner initially
+  const loadingSpinner = document.createElement('div');
+  loadingSpinner.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 150px;
+  `;
+  loadingSpinner.innerHTML = `
+    <div style="
+      position: relative;
+      width: 70px;
+      height: 70px;
+      margin-bottom: 15px;
+    ">
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 4px solid transparent;
+        border-top-color: #2196F3;
+        border-radius: 50%;
+        animation: spinnerOne 1.2s linear infinite;
+      "></div>
+      <div style="
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        bottom: 5px;
+        border: 4px solid transparent;
+        border-top-color: #3F51B5;
+        border-radius: 50%;
+        animation: spinnerTwo 0.8s linear infinite;
+      "></div>
+      <div style="
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        right: 15px;
+        bottom: 15px;
+        border: 4px solid transparent;
+        border-top-color: #FF6B35;
+        border-radius: 50%;
+        animation: spinnerThree 0.6s linear infinite;
+      "></div>
+    </div>
+    <div style="
+      color: #2196F3;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-weight: 500;
+      font-size: 16px;
+      text-align: center;
+    ">Generating summary<span class="loading-dots">...</span></div>
+    <style>
+      @keyframes spinnerOne {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes spinnerTwo {
+        0% { transform: rotate(60deg); }
+        100% { transform: rotate(420deg); }
+      }
+      @keyframes spinnerThree {
+        0% { transform: rotate(120deg); }
+        100% { transform: rotate(480deg); }
+      }
+      @keyframes loadingDots {
+        0% { content: "."; }
+        33% { content: ".."; }
+        66% { content: "..."; }
+        100% { content: ""; }
+      }
+      .loading-dots {
+        display: inline-block;
+        animation: loadingDots 1.5s infinite;
+      }
+    </style>
+  `;
+  contentArea.appendChild(loadingSpinner);
+  
+  // Assemble modal
+  header.appendChild(title);
+  buttonsContainer.appendChild(copyButton);
+  buttonsContainer.appendChild(closeButton);
+  header.appendChild(buttonsContainer);
+  modalContent.appendChild(header);
+  modalContent.appendChild(contentArea);
+  modal.appendChild(modalContent);
+  
+  // Add modal to document
+  document.body.appendChild(modal);
+  
+  // Generate summary
+  generateConversationSummary();
+}
+
+// Function to copy the summary to clipboard
+function copySummaryToClipboard() {
+  // Find the summary container
+  const summaryContainer = document.querySelector('.summary-container');
+  if (!summaryContainer) return;
+  
+  try {
+    // Extract text from the summary container (removing HTML tags)
+    const summaryText = summaryContainer.innerText || summaryContainer.textContent;
+    
+    // Use the Clipboard API to copy the text
+    navigator.clipboard.writeText(summaryText).then(() => {
+      // Show success notification
+      showCopyNotification('Summary copied to clipboard! 📋', '#4CAF50');
+      
+      // Change the copy button to show success
+      const copyButton = document.getElementById('ai-summary-copy-btn');
+      if (copyButton) {
+        const originalInnerHTML = copyButton.innerHTML;
+        const originalBackground = copyButton.style.background;
+        
+        // Change to checkmark and success color
+        copyButton.innerHTML = '✓';
+        copyButton.style.background = 'linear-gradient(45deg, #4CAF50, #4CAF50)';
+        
+        // Revert after a delay
+        setTimeout(() => {
+          copyButton.innerHTML = originalInnerHTML;
+          copyButton.style.background = originalBackground;
+        }, 2000);
+      }
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      showCopyNotification('Failed to copy summary', '#F44336');
+    });
+  } catch (error) {
+    console.error('Copy error:', error);
+    showCopyNotification('Failed to copy summary', '#F44336');
+  }
+}
+
+// Function to show copy notification
+function showCopyNotification(message, backgroundColor) {
+  // Check if there's already a notification
+  const existingNotification = document.getElementById('ai-summary-notification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+  
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.id = 'ai-summary-notification';
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${backgroundColor};
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    z-index: 10002;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    align-items: center;
+  `;
+  
+  // Add to body
+  document.body.appendChild(notification);
+  
+  // Trigger animation
+  setTimeout(() => {
+    notification.style.opacity = '1';
+    notification.style.transform = 'translateX(-50%) translateY(0)';
+  }, 10);
+  
+  // Remove after delay
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(-50%) translateY(20px)';
+    
+    // Remove from DOM after fade out
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 3000);
+}
+
+// Function to extract the last 10 conversation messages
+function extractConversationMessages() {
+  const messages = [];
+  
+  // Get all seller and buyer messages on the page
+  const sellerMessages = document.querySelectorAll('.seller-msg');
+  const buyerMessages = document.querySelectorAll('.user-msg');
+  
+  // Combine all messages and sort them by their position in the DOM
+  const allMessages = [...sellerMessages, ...buyerMessages];
+  
+  // Sort messages based on their position in the DOM to get chronological order
+  allMessages.sort((a, b) => {
+    // Use node comparison for DOM position
+    if (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) {
+      return -1;
+    } else {
+      return 1;
+    }
+  });
+  
+  // Get the last 10 messages (or fewer if there aren't 10)
+  const lastMessages = allMessages.slice(-10);
+  
+  // Extract text and sender type for each message
+  lastMessages.forEach(msg => {
+    // Extract original text only, not including translation overlays
+    const text = Array.from(msg.childNodes)
+      .filter(node => node.nodeType === Node.TEXT_NODE)
+      .map(node => node.textContent.trim())
+      .join('')
+      .trim();
+    
+    // Determine if this is a seller or buyer message
+    const isSeller = msg.classList.contains('seller-msg');
+    
+    messages.push({
+      text: text,
+      sender: isSeller ? 'seller' : 'buyer'
+    });
+  });
+  
+  return messages;
+}
+
+// Function to generate AI-based summary of conversation
+async function generateConversationSummary() {
+  try {
+    // Extract conversation messages
+    const messages = extractConversationMessages();
+    
+    if (messages.length === 0) {
+      // Handle case where no messages are found
+      updateSummaryContent('No conversation messages found. Please make sure you have some messages in the chat.');
+      return;
+    }
+    
+    // Get buyer language from storage
+    const result = await chrome.storage.sync.get(['buyerLanguage']);
+    const buyerLanguage = result.buyerLanguage || 'en';
+    
+    // Send messages to background script for AI summarization
+    chrome.runtime.sendMessage(
+      {
+        action: 'generate_conversation_summary',
+        messages: messages,
+        targetLanguage: buyerLanguage
+      },
+      (response) => {
+        if (response.error) {
+          // Handle error
+          updateSummaryContent(`Error generating summary: ${response.error}`, true);
+        } else if (response.summary) {
+          // Display the summary
+          updateSummaryContent(response.summary);
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error generating conversation summary:', error);
+    updateSummaryContent(`Error: ${error.message}`, true);
+  }
+}
+
+// Function to update the summary content in the modal
+function updateSummaryContent(content, isError = false) {
+  const contentArea = document.getElementById('ai-summary-content');
+  if (!contentArea) return;
+  
+  // Clear the loading spinner
+  contentArea.innerHTML = '';
+  
+  // Create content container
+  const container = document.createElement('div');
+  container.style.cssText = `
+    padding: 15px;
+    ${isError ? 'color: #f44336;' : ''}
+  `;
+  
+  // Store the original plain text content as a data attribute for copying
+  if (!isError) {
+    container.dataset.plainText = content;
+  }
+  
+  // Add content
+  if (isError) {
+    // Show error message
+    container.innerHTML = `
+      <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <div style="color: #f44336; margin-right: 10px; font-size: 24px;">⚠️</div>
+        <div>${content}</div>
+      </div>
+      <div style="font-size: 13px; color: #666; margin-top: 10px;">
+        Please check your API settings in the extension popup.
+      </div>
+    `;
+  } else {
+    // Process the content to add visual enhancements
+    let enhancedContent = content;
+    
+    // Add styling to bullet points and numbers
+    enhancedContent = enhancedContent
+      // Style numbered lists (1. 2. 3. etc)
+      .replace(/(\d+\.\s)([^\n]+)/g, '<div class="summary-point"><span class="summary-number">$1</span>$2</div>')
+      // Style bullet points
+      .replace(/(\•|\-|\*)\s([^\n]+)/g, '<div class="summary-point"><span class="summary-bullet">•</span>$2</div>')
+      // Style section headers (lines ending with colon)
+      .replace(/([^\n:]+):(\s*(?:\n|$))/g, '<h3 class="summary-section">$1:</h3>$2')
+      // Add paragraph styling
+      .replace(/\n\n/g, '</p><p>');
+    
+    // Show summary content with enhanced formatting
+    container.innerHTML = `
+      <style>
+        .summary-container {
+          font-size: 15px;
+          line-height: 1.6;
+          color: #333;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: linear-gradient(to bottom right, #ffffff, #f8f9fa);
+          border-radius: 10px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          padding: 20px;
+        }
+        
+        .summary-header {
+          font-weight: 600;
+          font-size: 16px;
+          color: #2196F3;
+          margin-bottom: 15px;
+          display: flex;
+          align-items: center;
+        }
+        
+        .summary-icon {
+          margin-right: 10px;
+          font-size: 22px;
+        }
+        
+        .summary-section {
+          font-size: 16px;
+          font-weight: 600;
+          color: #3F51B5;
+          margin-top: 15px;
+          margin-bottom: 8px;
+          border-bottom: 1px solid rgba(63, 81, 181, 0.2);
+          padding-bottom: 5px;
+        }
+        
+        .summary-point {
+          display: flex;
+          margin: 8px 0;
+          align-items: baseline;
+        }
+        
+        .summary-bullet {
+          color: #FF6B35;
+          font-size: 18px;
+          margin-right: 10px;
+          flex-shrink: 0;
+        }
+        
+        .summary-number {
+          color: #FF6B35;
+          font-weight: 600;
+          margin-right: 8px;
+          flex-shrink: 0;
+        }
+        
+        p {
+          margin: 10px 0;
+        }
+        
+        strong, b {
+          color: #333;
+          font-weight: 600;
+        }
+      </style>
+      <div class="summary-container">
+        <div class="summary-header">
+          <span class="summary-icon">🔍</span>
+          <span>Conversation Summary</span>
+        </div>
+        <p>${enhancedContent}</p>
+      </div>
+    `;
+  }
+  
+  contentArea.appendChild(container);
+}
 
 // Detect seller messages and add translation overlays
 function scanForSellerMessages() {
