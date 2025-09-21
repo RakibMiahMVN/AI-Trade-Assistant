@@ -6,6 +6,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const modelSelect = document.getElementById("model-select");
   const saveApiKeyBtn = document.getElementById("save-api-key");
   const saveStatus = document.getElementById("save-status");
+  const viewNotesBtn = document.getElementById("view-notes-btn");
+  const clearNotesBtn = document.getElementById("clear-notes-btn");
+  const notesLoading = document.getElementById("notes-loading");
+  const notesContent = document.getElementById("notes-content");
 
   // Load saved settings on popup open
   chrome.storage.sync.get(["groqApiKey", "groqModel"], function (result) {
@@ -16,6 +20,9 @@ document.addEventListener("DOMContentLoaded", function () {
       modelSelect.value = result.groqModel;
     }
   });
+
+  // Load notes summary
+  loadNotesSummary();
 
   // Save settings functionality
   saveApiKeyBtn.addEventListener("click", function () {
@@ -92,4 +99,81 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
+
+  // Notes management
+  viewNotesBtn.addEventListener("click", function () {
+    // Open a new tab or window to display notes
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('popup.html') + '?view=notes',
+      active: true
+    });
+  });
+
+  clearNotesBtn.addEventListener("click", function () {
+    if (confirm("Are you sure you want to delete all saved conversation notes?")) {
+      chrome.storage.local.clear(() => {
+        console.log("All notes cleared");
+        loadNotesSummary();
+        
+        // Show confirmation
+        const originalText = clearNotesBtn.textContent;
+        clearNotesBtn.textContent = "Cleared!";
+        clearNotesBtn.style.background = "#4CAF50";
+        
+        setTimeout(() => {
+          clearNotesBtn.textContent = originalText;
+          clearNotesBtn.style.background = "#f44336";
+        }, 2000);
+      });
+    }
+  });
+
+  // Load and display notes summary
+  function loadNotesSummary() {
+    chrome.storage.local.get(null, (result) => {
+      const summaries = Object.keys(result)
+        .filter(key => key.startsWith('summary_'))
+        .map(key => result[key])
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      notesLoading.style.display = 'none';
+      notesContent.style.display = 'block';
+      
+      if (summaries.length === 0) {
+        notesContent.innerHTML = `
+          <div style="text-align: center; color: #999;">
+            <div style="font-size: 16px; margin-bottom: 5px;">📝</div>
+            <div>No notes saved yet</div>
+          </div>
+        `;
+      } else {
+        const latestSummary = summaries[0];
+        const date = new Date(latestSummary.timestamp).toLocaleDateString();
+        
+        notesContent.innerHTML = `
+          <div style="margin-bottom: 8px;">
+            <strong style="color: #4CAF50;">${summaries.length} saved note${summaries.length > 1 ? 's' : ''}</strong>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <div style="font-size: 11px; color: #999;">Latest: ${date}</div>
+            <div style="font-size: 11px; line-height: 1.4; margin-top: 4px;">
+              ${latestSummary.summary ? latestSummary.summary.substring(0, 100) + '...' : 'Summary unavailable'}
+            </div>
+          </div>
+          ${latestSummary.dealStatus ? `
+            <div style="
+              background: #e8f5e8; 
+              padding: 4px 6px; 
+              border-radius: 3px; 
+              font-size: 10px; 
+              color: #2e7d32;
+              border-left: 2px solid #4CAF50;
+            ">
+              Status: ${latestSummary.dealStatus}
+            </div>
+          ` : ''}
+        `;
+      }
+    });
+  }
 });

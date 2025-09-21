@@ -38,6 +38,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true; // Keep message channel open for async response
   }
+
+  if (request.action === "summarize_conversation") {
+    summarizeConversation(request.messages)
+      .then((summary) => {
+        sendResponse({ summary });
+      })
+      .catch((error) => {
+        console.error("Summarization error:", error);
+        sendResponse({ error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
 });
 
 // Translate text using Google Translate unofficial API
@@ -407,6 +419,172 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
         bengali: "আমরা দাম নিয়ে আলোচনা করতে পারি?",
       },
     ];
+  }
+}
+
+// Summarize conversation from last 10 messages
+async function summarizeConversation(messages) {
+  // Get API key and model from Chrome storage
+  const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
+  const API_KEY = result.groqApiKey;
+  const MODEL = result.groqModel || "llama-3.1-8b-instant";
+
+  if (!API_KEY || API_KEY.trim() === "") {
+    console.log("Groq API key not set. Please configure in extension popup.");
+    return {
+      summary: "Please set your Groq API key in the extension settings to use the note-taking feature.",
+      keyPoints: [],
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+  // Take only the last 10 messages
+  const last10Messages = messages.slice(-10);
+  
+  // Format conversation for summarization
+  let conversationText = "";
+  if (last10Messages && last10Messages.length > 0) {
+    conversationText = last10Messages
+      .map((msg, index) => 
+        `${index + 1}. ${msg.type === "seller" ? "Seller" : "Buyer"}: ${msg.text}`
+      )
+      .join("\n");
+  } else {
+    return {
+      summary: "No conversation messages found to summarize.",
+      keyPoints: [],
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  try {
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert business analyst specializing in international trade conversations. Your task is to analyze conversations between buyers and Chinese sellers and create concise, actionable summaries.
+
+Create a comprehensive summary that includes:
+1. A brief overview of the conversation context
+2. Key discussion points (prices, products, quantities, terms)
+3. Current negotiation status
+4. Important deadlines or next steps
+5. Seller's position and buyer's requirements
+
+Format your response as JSON with this structure:
+{
+  "summary": "Brief 2-3 sentence overview of the conversation",
+  "keyPoints": [
+    "Key point 1",
+    "Key point 2", 
+    "Key point 3",
+    "etc..."
+  ],
+  "nextSteps": "Recommended next actions",
+  "dealStatus": "Current status of negotiations"
+}
+
+Keep each key point concise but informative. Focus on actionable insights and important details for future reference.`,
+        },
+        {
+          role: "user",
+          content: `Please analyze and summarize this conversation between a buyer and Chinese seller. Focus on the key business points, negotiation status, and important details:\n\n${conversationText}`,
+        },
+      ],
+      max_tokens: 500,
+      temperature: 0.3,
+    };
+
+    console.log("Sending conversation summarization request to Groq API");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Groq API Error Response:", response.status, errorText);
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log("Groq Summarization Response:", data);
+
+    const content = data.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in Groq API response");
+    }
+
+    // Try to parse as JSON, fallback to text parsing if needed
+    let parsedSummary;
+    try {
+      parsedSummary = JSON.parse(content);
+    } catch (parseError) {
+      console.log("Failed to parse JSON, using text parsing fallback");
+      
+      // Fallback text parsing
+      const lines = content.split('\n').filter(line => line.trim());
+      const summary = lines[0] || "Conversation summary unavailable";
+      const keyPoints = lines.slice(1, 6).map(line => line.replace(/^[-*•]\s*/, ''));
+      
+      parsedSummary = {
+        summary: summary,
+        keyPoints: keyPoints,
+        nextSteps: "Review conversation for next actions",
+        dealStatus: "In progress"
+      };
+    }
+
+    // Add timestamp and conversation count
+    const finalSummary = {
+      ...parsedSummary,
+      timestamp: new Date().toISOString(),
+      messageCount: last10Messages.length,
+      conversationId: Date.now().toString()
+    };
+
+    // Store the summary in Chrome storage
+    const summaryKey = `summary_${Date.now()}`;
+    const storageData = {};
+    storageData[summaryKey] = finalSummary;
+    
+    chrome.storage.local.set(storageData, () => {
+      console.log("Conversation summary saved to storage");
+    });
+
+    return finalSummary;
+
+  } catch (error) {
+    console.error("Conversation summarization error:", error);
+    
+    // Return a basic summary on error
+    return {
+      summary: `Error generating AI summary. Conversation included ${last10Messages.length} messages between buyer and seller.`,
+      keyPoints: [
+        "AI summarization service unavailable",
+        "Manual review recommended",
+        `${last10Messages.length} messages in conversation`
+      ],
+      nextSteps: "Review conversation manually or retry summarization",
+      dealStatus: "Unknown - requires manual review",
+      timestamp: new Date().toISOString(),
+      messageCount: last10Messages.length,
+      error: error.message
+    };
   }
 }
 
