@@ -1,23 +1,41 @@
 // Content script for AI Trade Assistant
 
-console.log('AI Trade Assistant content script loaded');
+console.log("AI Trade Assistant content script loaded");
 
-// Function to translate text using MyMemory API
-async function translateText(text, from = 'zh-CN', to = 'bn') {
+let apiKey = null;
+let targetLanguage = "bn";
+
+// Load settings from storage
+chrome.storage.sync.get(["apiKey", "language"], (result) => {
+  apiKey = result.apiKey || null;
+  targetLanguage = result.language || "bn";
+});
+
+// Function to translate text using Google Translate (unofficial API)
+async function translateText(text, from = "zh-CN", to = targetLanguage) {
   try {
-    const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`);
+    const response = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(
+        text
+      )}`
+    );
     const data = await response.json();
-    return data.responseData.translatedText;
+    if (data && data[0] && data[0][0] && data[0][0][0]) {
+      return data[0][0][0];
+    } else {
+      console.error("Translation API error:", data);
+      return text;
+    }
   } catch (error) {
-    console.error('Translation error:', error);
+    console.error("Translation error:", error);
     return text; // fallback to original
   }
 }
 
 // Function to add translation overlay
 function addTranslationOverlay(element, translatedText) {
-  const overlay = document.createElement('div');
-  overlay.className = 'translation-overlay';
+  const overlay = document.createElement("div");
+  overlay.className = "translation-overlay";
   overlay.style.cssText = `
     position: absolute;
     background: rgba(255, 255, 255, 0.9);
@@ -30,7 +48,7 @@ function addTranslationOverlay(element, translatedText) {
     max-width: 200px;
   `;
   overlay.textContent = translatedText;
-  element.style.position = 'relative';
+  element.style.position = "relative";
   element.appendChild(overlay);
 }
 
@@ -40,13 +58,13 @@ function observeMessages() {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) {
-          const sellerMsgs = node.querySelectorAll('.seller-msg');
+          const sellerMsgs = node.querySelectorAll(".seller-msg");
           sellerMsgs.forEach(async (msg) => {
             const text = msg.textContent;
-            if (text && !msg.hasAttribute('data-translated')) {
+            if (text && !msg.hasAttribute("data-translated")) {
               const translated = await translateText(text);
               addTranslationOverlay(msg, translated);
-              msg.setAttribute('data-translated', 'true');
+              msg.setAttribute("data-translated", "true");
             }
           });
         }
@@ -58,8 +76,8 @@ function observeMessages() {
 }
 
 // Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', observeMessages);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", observeMessages);
 } else {
   observeMessages();
 }

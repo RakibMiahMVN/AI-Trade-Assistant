@@ -1,0 +1,143 @@
+# 🚀 Hackathon Plan: Browser Extension for 1688 Seller Chat Translation
+
+## Overview
+
+This hackathon project builds a **browser extension** that enhances communication with Chinese sellers on 1688.com by providing real-time translation and AI-powered response suggestions.
+
+**Development Approach**: We'll first create a sample demo page that mimics 1688.com's chat interface, then build the extension to work with this demo page using specific IDs/classes. Once tested and working, we can adapt it for the real 1688.com website.
+
+## Key Features
+
+1. **Automatic Chinese → Bengali Translation**: Extension reads seller messages and translates them to Bengali
+2. **Smart Response Suggestions**: AI generates relevant reply suggestions based on seller messages
+3. **Multi-language Input Support**: Users can write in Banglish, Bengali, or English with one-click translation to Chinese
+4. **Demo Page First**: Start with a local HTML page for easy testing and development
+
+## Tech Stack
+
+- **Extension Framework**: Manifest V3 (Chrome/Firefox compatible)
+- **Frontend**: React for popup UI and content script overlays
+- **Build Tools**: Webpack, Babel for extension bundling
+
+## Detailed Implementation Steps
+
+### Phase 1: Demo Page & Extension Setup (3 hours)
+
+1. **Create Sample 1688 Chat Demo Page**
+
+   - Build `demo.html` with chat interface mockup
+   - Add seller message elements with specific IDs: `seller-message-1`, `seller-message-2`, etc.
+   - Create input field with ID: `chat-input`
+   - Add send button with ID: `send-button`
+   - Style to resemble 1688.com chat interface
+
+2. **Initialize Extension Structure**
+
+   - Create manifest.json (v3) targeting local demo page
+   - Set up content scripts for `file://` protocol (for local testing)
+   - Configure webpack for bundling React components
+   - Install dependencies: `react`, `webextension-polyfill`, `axios`
+
+3. **Build Basic Extension Framework**
+   - Create popup UI for extension settings
+   - Set up content script injection for demo page
+   - Implement background script for API calls
+   - Test extension loading on demo page
+
+### Phase 2: Automatic Chinese → Bengali Translation (2 hours)
+
+1. **Content Script for Message Reading**
+
+   - Target demo page seller messages using specific IDs/classes
+   - Create DOM observers to detect new messages
+   - Extract Chinese text from elements with class `seller-msg`
+
+2. **Translation Integration**
+
+   - Implement Chinese → Bengali translation using MyMemory API
+   - Add translated text overlay next to original Chinese messages
+   - Handle translation caching to avoid repeated API calls
+   - Add toggle to show/hide translations
+
+3. **UI Enhancement**
+   - Style translation overlays with class `translation-overlay`
+   - Add loading indicators during translation
+   - Handle translation errors gracefully
+
+### Phase 3: AI Response Suggestions (2 hours)
+
+1. **Input Field Detection**
+
+   - Locate demo page input field using ID `chat-input`
+   - Create overlay above input field for suggestions
+
+2. **AI Suggestion Generation**
+
+   - Analyze seller messages for context
+   - Generate 3-4 relevant response suggestions using Hugging Face
+   - Display suggestions as clickable buttons above input field
+
+3. **Suggestion Interaction**
+   - Allow clicking suggestions to populate input field
+   - Add loading states during AI processing
+   - Implement suggestion refresh based on new messages
+
+### Phase 4: Multi-language Input & Polish (1 hour)
+
+1. **Input Enhancement**
+
+   - Add "Translate & Send" button next to input field
+   - Detect input language (Banglish/Bengali/English)
+   - Implement Banglish → Bengali conversion (optional)
+
+2. **Translation to Chinese**
+
+   - Translate user input to Chinese before sending
+   - Show preview of translated text before sending
+   - Handle send button override to use translated text
+
+3. **Final Testing**
+   - Test full workflow on demo page
+   - Add error handling and fallbacks
+   - Prepare for potential 1688.com adaptation
+
+## Coordination Points
+
+- **Daily Standups**: 15-minute sync at start/end of each phase
+- **Code Reviews**: Share progress after each phase completion
+- **API Integration**: Person 2 provides endpoints, Person 1 integrates
+- **Testing**: Joint testing of full flow before demo
+
+## Success Criteria
+
+- ✅ Demo page loads with realistic 1688.com chat mockup
+- ✅ Browser extension loads and detects demo page elements
+- ✅ Chinese seller messages automatically translate to Bengali
+- ✅ AI generates relevant response suggestions above input field
+- ✅ Users can write in Banglish/Bengali/English with translate button
+- ✅ All functionality works on local demo page first
+
+## Risk Mitigation
+
+- Have fallback mock data if APIs fail
+- Prepare offline demo mode
+- Document API alternatives if rate limits hit
+- Time buffer for unexpected issues
+
+## Timeline
+
+- **Phase 1**: 3 hours (Extension Setup)
+- **Phase 2**: 2 hours (Chinese → Bengali Translation)
+- **Phase 3**: 2 hours (AI Response Suggestions)
+- **Phase 4**: 1 hour (Multi-language Input & Polish)
+- **Total**: 8 hours + buffer
+
+## Demo Flow Script
+
+1. Open demo.html → Shows mock 1688.com chat interface
+2. Install extension → Enable on demo page
+3. Add Chinese seller message → Extension shows Bengali translation
+4. AI generates 3-4 response suggestions above input field
+5. User writes in Banglish → Clicks "Translate & Send" → Message sent in Chinese
+6. Demonstrate suggestion click to auto-fill input
+7. Show settings popup for extension configuration

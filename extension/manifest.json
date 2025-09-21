@@ -3,14 +3,8 @@
   "name": "AI Trade Assistant",
   "version": "1.0.0",
   "description": "Browser extension for real-time translation and AI response suggestions on 1688.com chat",
-  "permissions": [
-    "activeTab",
-    "storage",
-    "scripting"
-  ],
-  "host_permissions": [
-    "file://*/*"
-  ],
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["file://*/*"],
   "content_scripts": [
     {
       "matches": ["file://*/*"],
