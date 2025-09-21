@@ -107,7 +107,7 @@ function addReviewButton() {
   reviewButton.style.cssText = `
     position: fixed;
     right: 20px;
-    top: 60%;
+    top: 50%;
     transform: translateY(-50%);
     width: 50px;
     height: 50px;
