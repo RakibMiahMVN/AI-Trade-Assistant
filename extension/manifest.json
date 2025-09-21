@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "AI Trade Assistant",
+  "version": "1.0.0",
+  "description": "Browser extension for real-time translation and AI response suggestions on 1688.com chat",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "file://*/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["file://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AI Trade Assistant"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["*.js", "*.css"],
+      "matches": ["file://*/*"]
+    }
+  ]
+}

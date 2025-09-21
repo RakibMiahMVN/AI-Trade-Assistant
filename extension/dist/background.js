@@ -1,0 +1,1 @@
+chrome.runtime.onInstalled.addListener(function(){console.log("AI Trade Assistant extension installed")});
