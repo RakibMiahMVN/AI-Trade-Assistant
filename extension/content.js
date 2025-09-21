@@ -752,7 +752,7 @@ async function showNotesModal() {
   `;
   
   const title = document.createElement('h2');
-  title.textContent = '📝 Last 20 Messages Summary';
+  title.textContent = '📝 AI Notes & Summary';
   title.style.cssText = `
     margin: 0;
     color: #333;
@@ -774,10 +774,55 @@ async function showNotesModal() {
   header.appendChild(title);
   header.appendChild(closeBtn);
   
-  // Content area with copy button
+  // Tab navigation
+  const tabContainer = document.createElement('div');
+  tabContainer.style.cssText = `
+    margin-bottom: 20px;
+    display: flex;
+    border-bottom: 2px solid #f0f0f0;
+  `;
+  
+  // Tab buttons
+  const autoSummaryTab = document.createElement('button');
+  autoSummaryTab.className = 'tab-btn active-tab';
+  autoSummaryTab.textContent = '🤖 Generate Auto Summary';
+  autoSummaryTab.style.cssText = `
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    background: #4CAF50;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px 6px 0 0;
+    margin-right: 2px;
+    transition: all 0.3s ease;
+  `;
+  
+  const viewNotesTab = document.createElement('button');
+  viewNotesTab.className = 'tab-btn';
+  viewNotesTab.textContent = '👀 View Notes';
+  viewNotesTab.style.cssText = `
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    background: #e0e0e0;
+    color: #666;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px 6px 0 0;
+    transition: all 0.3s ease;
+  `;
+  
+  tabContainer.appendChild(autoSummaryTab);
+  tabContainer.appendChild(viewNotesTab);
+  
+  // Content area with action buttons
   const content = document.createElement('div');
   content.innerHTML = `
-    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+    <div id="action-buttons" style="margin-bottom: 20px; display: flex; gap: 10px;">
       <button id="copy-summary-btn" style="
         background: #2196F3;
         color: white;
@@ -790,8 +835,8 @@ async function showNotesModal() {
         display: flex;
         align-items: center;
         gap: 8px;
-      ">� Copy Summary</button>
-      <button id="view-saved-btn" style="
+      ">📋 Copy Summary</button>
+      <button id="refresh-summary-btn" style="
         background: #FF9800;
         color: white;
         border: none;
@@ -800,7 +845,10 @@ async function showNotesModal() {
         cursor: pointer;
         font-size: 16px;
         flex: 0 0 auto;
-      ">👀 View Saved Notes</button>
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      ">🔄 Refresh Summary</button>
     </div>
     <div id="summary-content" style="
       min-height: 200px;
@@ -829,6 +877,7 @@ async function showNotesModal() {
   `;
   
   modalContent.appendChild(header);
+  modalContent.appendChild(tabContainer);
   modalContent.appendChild(content);
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
@@ -840,21 +889,62 @@ async function showNotesModal() {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    .tab-btn:hover {
+      opacity: 0.8;
+    }
+    .active-tab {
+      background: #4CAF50 !important;
+      color: white !important;
+    }
+    .inactive-tab {
+      background: #e0e0e0 !important;
+      color: #666 !important;
+    }
   `;
   document.head.appendChild(style);
   
   // Get elements
-  const viewSavedBtn = content.querySelector('#view-saved-btn');
   const copySummaryBtn = content.querySelector('#copy-summary-btn');
+  const refreshSummaryBtn = content.querySelector('#refresh-summary-btn');
   const summaryContent = content.querySelector('#summary-content');
+  const actionButtons = content.querySelector('#action-buttons');
   
-  // Add event listeners
-  viewSavedBtn.onclick = async () => {
-    await loadSavedNotes(summaryContent);
-  };
+  // Tab switching functionality
+  function switchToAutoSummary() {
+    autoSummaryTab.className = 'tab-btn active-tab';
+    viewNotesTab.className = 'tab-btn inactive-tab';
+    
+    // Show summary action buttons
+    actionButtons.style.display = 'flex';
+    
+    // Generate auto summary if content is empty or shows notes
+    if (summaryContent.innerHTML.includes('Saved Notes') || summaryContent.innerHTML.includes('No saved notes')) {
+      generateAutoSummary(summaryContent, copySummaryBtn);
+    }
+  }
   
+  function switchToViewNotes() {
+    autoSummaryTab.className = 'tab-btn inactive-tab';
+    viewNotesTab.className = 'tab-btn active-tab';
+    
+    // Hide summary action buttons for notes view
+    actionButtons.style.display = 'none';
+    
+    // Load saved notes
+    loadSavedNotes(summaryContent);
+  }
+  
+  // Add tab click handlers
+  autoSummaryTab.onclick = switchToAutoSummary;
+  viewNotesTab.onclick = switchToViewNotes;
+  
+  // Add action button handlers
   copySummaryBtn.onclick = async () => {
     await copySummaryToClipboard(summaryContent);
+  };
+  
+  refreshSummaryBtn.onclick = async () => {
+    await generateAutoSummary(summaryContent, copySummaryBtn);
   };
   
   // Close modal on outside click
@@ -864,7 +954,7 @@ async function showNotesModal() {
     }
   };
   
-  // Automatically generate summary with last 20 messages
+  // Auto-generate summary on modal open (default tab is already active)
   await generateAutoSummary(summaryContent, copySummaryBtn);
 }
 
