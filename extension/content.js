@@ -1479,6 +1479,52 @@ function showSmartSuggestions(suggestions, inputField) {
   container.innerHTML = "";
 
   if (suggestions && suggestions.length > 0) {
+    // Add header with close button
+    const header = document.createElement("div");
+    header.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-bottom: 1px solid #ddd;
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+    `;
+
+    const title = document.createElement("span");
+    title.textContent = "💡 AI Suggestions";
+    header.appendChild(title);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "✕";
+    closeBtn.title = "Close suggestions";
+    closeBtn.style.cssText = `
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: #999;
+      padding: 2px 6px;
+      border-radius: 3px;
+      transition: all 0.2s ease;
+    `;
+    closeBtn.onmouseover = () => {
+      closeBtn.style.background = "#e0e0e0";
+      closeBtn.style.color = "#666";
+    };
+    closeBtn.onmouseout = () => {
+      closeBtn.style.background = "none";
+      closeBtn.style.color = "#999";
+    };
+    closeBtn.onclick = () => {
+      container.style.display = "none";
+    };
+    header.appendChild(closeBtn);
+
+    container.appendChild(header);
+
     suggestions.forEach((suggestion, index) => {
       const item = document.createElement("div");
       item.className = "smart-suggestion-item";
@@ -1579,6 +1625,29 @@ function showSmartSuggestions(suggestions, inputField) {
     });
 
     container.style.display = "block";
+
+    // Add click outside to close
+    const handleClickOutside = (event) => {
+      if (!container.contains(event.target) && event.target !== inputField) {
+        container.style.display = "none";
+        document.removeEventListener("click", handleClickOutside);
+        document.removeEventListener("keydown", handleEscapeKey);
+      }
+    };
+
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape") {
+        container.style.display = "none";
+        document.removeEventListener("click", handleClickOutside);
+        document.removeEventListener("keydown", handleEscapeKey);
+      }
+    };
+
+    // Add event listeners after a short delay to avoid immediate closing
+    setTimeout(() => {
+      document.addEventListener("click", handleClickOutside);
+      document.addEventListener("keydown", handleEscapeKey);
+    }, 100);
   }
 }
 
