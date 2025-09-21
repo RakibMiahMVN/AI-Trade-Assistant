@@ -601,14 +601,14 @@ ${conversationText}`,
       summaryValue: summaryValue
     };
 
-    // Store the summary in Chrome storage
-    const summaryKey = `summary_${Date.now()}`;
-    const storageData = {};
-    storageData[summaryKey] = finalSummary;
+    // Don't auto-save summary - user must manually save via Save button
+    // const summaryKey = `summary_${Date.now()}`;
+    // const storageData = {};
+    // storageData[summaryKey] = finalSummary;
     
-    chrome.storage.local.set(storageData, () => {
-      console.log(`${summaryType} summary saved to storage`);
-    });
+    // chrome.storage.local.set(storageData, () => {
+    //   console.log(`${summaryType} summary saved to storage`);
+    // });
 
     return finalSummary;
 

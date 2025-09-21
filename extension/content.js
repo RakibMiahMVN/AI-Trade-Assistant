@@ -541,138 +541,40 @@ function getConversationHistory() {
 
 // Create and inject notes button beside send button
 function injectNotesButton() {
-  // Check if notes button already exists
-  if (document.querySelector('.notes-btn')) return;
-  
-  // Try to find the send button using multiple selectors
-  let sendBtn = document.querySelector('.send-btn, #send-btn, [id*="send"], [class*="send"]');
-  
-  // If not found, search for buttons containing "发送" text
-  if (!sendBtn) {
-    const buttons = document.querySelectorAll('button');
-    for (const button of buttons) {
-      if (button.textContent.includes('发送') || button.textContent.includes('Send') || button.textContent.includes('send')) {
-        sendBtn = button;
-        break;
-      }
-    }
+  // Remove any existing notes buttons first
+  const existingButtons = document.querySelectorAll('.notes-btn');
+  if (existingButtons.length > 0) {
+    existingButtons.forEach(btn => btn.remove());
+    console.log(`Removed ${existingButtons.length} existing notes buttons`);
   }
   
-  if (!sendBtn) {
-    console.log("Send button not found, trying alternative approach...");
-    // Fallback: look for input container and add notes button there
-    const inputContainer = document.querySelector('.input-row, .chat-input-container, .message-input, [class*="input"]');
-    if (inputContainer) {
-      injectNotesButtonToContainer(inputContainer);
-      return;
-    }
-    
-    // Final fallback: inject as floating button
-    console.log("No suitable container found, using floating button");
-    injectFloatingNotesButton();
-    return;
-  }
-  
-  // Create notes button
-  const notesBtn = document.createElement('button');
-  notesBtn.className = 'notes-btn';
-  notesBtn.innerHTML = '📝';
-  notesBtn.title = 'Take Notes & Summarize (Last 20 Messages)';
-  notesBtn.style.cssText = `
-    width: ${sendBtn.offsetHeight || 40}px;
-    height: ${sendBtn.offsetHeight || 40}px;
-    border-radius: 6px;
-    background: #4CAF50;
-    color: white;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
-    margin-left: 8px;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    vertical-align: middle;
-    flex-shrink: 0;
-  `;
-  
-  notesBtn.onmouseover = () => {
-    notesBtn.style.transform = 'scale(1.05)';
-    notesBtn.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.4)';
-    notesBtn.style.background = '#45a049';
-  };
-  
-  notesBtn.onmouseout = () => {
-    notesBtn.style.transform = 'scale(1)';
-    notesBtn.style.boxShadow = '0 2px 6px rgba(76, 175, 80, 0.3)';
-    notesBtn.style.background = '#4CAF50';
-  };
-  
-  notesBtn.onclick = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    await showNotesModal();
-  };
-  
-  // Insert notes button after the send button
-  sendBtn.parentNode.insertBefore(notesBtn, sendBtn.nextSibling);
-  console.log("Notes button injected beside send button");
+  // Always create floating button in right-center position
+  console.log("Creating floating notes button in right-center position");
+  injectFloatingNotesButton();
 }
 
 // Helper function to inject notes button into input container
 function injectNotesButtonToContainer(container) {
-  const notesBtn = document.createElement('button');
-  notesBtn.className = 'notes-btn';
-  notesBtn.innerHTML = '📝';
-  notesBtn.title = 'Take Notes & Summarize (Last 20 Messages)';
-  notesBtn.style.cssText = `
-    width: 40px;
-    height: 40px;
-    border-radius: 6px;
-    background: #4CAF50;
-    color: white;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
-    margin-left: 8px;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  `;
-  
-  notesBtn.onmouseover = () => {
-    notesBtn.style.transform = 'scale(1.05)';
-    notesBtn.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.4)';
-    notesBtn.style.background = '#45a049';
-  };
-  
-  notesBtn.onmouseout = () => {
-    notesBtn.style.transform = 'scale(1)';
-    notesBtn.style.boxShadow = '0 2px 6px rgba(76, 175, 80, 0.3)';
-    notesBtn.style.background = '#4CAF50';
-  };
-  
-  notesBtn.onclick = async () => {
-    await showNotesModal();
-  };
-  
-  container.appendChild(notesBtn);
-  console.log("Notes button injected into input container");
+  // Always create floating button instead of inline button
+  console.log("Container found, but creating floating button instead");
+  injectFloatingNotesButton();
 }
 
 // Fallback function for floating notes button
 function injectFloatingNotesButton() {
+  // Remove any existing notes buttons (including inline ones)
+  const existingButtons = document.querySelectorAll('.notes-btn');
+  existingButtons.forEach(btn => btn.remove());
+  
   const notesBtn = document.createElement('button');
   notesBtn.className = 'notes-btn';
   notesBtn.innerHTML = '📝';
   notesBtn.title = 'Take Notes & Summarize (Last 20 Messages)';
   notesBtn.style.cssText = `
     position: fixed;
-    bottom: 20px;
+    top: 50%;
     right: 20px;
+    transform: translateY(-50%);
     width: 50px;
     height: 50px;
     border-radius: 50%;
@@ -687,12 +589,12 @@ function injectFloatingNotesButton() {
   `;
   
   notesBtn.onmouseover = () => {
-    notesBtn.style.transform = 'scale(1.1)';
+    notesBtn.style.transform = 'translateY(-50%) scale(1.1)';
     notesBtn.style.boxShadow = '0 6px 16px rgba(76, 175, 80, 0.4)';
   };
   
   notesBtn.onmouseout = () => {
-    notesBtn.style.transform = 'scale(1)';
+    notesBtn.style.transform = 'translateY(-50%) scale(1)';
     notesBtn.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.3)';
   };
   
@@ -701,7 +603,7 @@ function injectFloatingNotesButton() {
   };
   
   document.body.appendChild(notesBtn);
-  console.log("Notes button injected as floating button");
+  console.log("Floating notes button injected at right-center position");
 }
 
 // Show notes modal with automatic summarization
@@ -1304,7 +1206,25 @@ function displaySummary(contentDiv, summary, type = 'messages', value = '10') {
   
   contentDiv.innerHTML = `
     <div style="margin-bottom: 20px;">
-      <h3 style="color: #4CAF50; margin: 0 0 10px 0;">📊 Conversation Summary</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="color: #4CAF50; margin: 0;">📊 Conversation Summary</h3>
+        <button id="save-summary-btn" style="
+          background: #2196F3;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.3s ease;
+        " onmouseover="this.style.background='#1976D2'; this.style.transform='scale(1.02)'" onmouseout="this.style.background='#2196F3'; this.style.transform='scale(1)'">
+          💾 Save to Notes
+        </button>
+      </div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <p style="color: #666; font-size: 14px; margin: 0;">
           Generated: ${date}
@@ -1376,6 +1296,71 @@ function displaySummary(contentDiv, summary, type = 'messages', value = '10') {
       </div>
     ` : ''}
   `;
+  
+  // Add event listener for save button
+  const saveBtn = contentDiv.querySelector('#save-summary-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      try {
+        // Show loading state
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = '⏳ Saving...';
+        saveBtn.disabled = true;
+        saveBtn.style.background = '#666';
+        
+        // Create storage data
+        const summaryKey = `summary_${Date.now()}`;
+        const storageData = {};
+        storageData[summaryKey] = {
+          ...summary,
+          type: type,
+          value: value,
+          summaryType: type,
+          summaryValue: value
+        };
+        
+        // Save to Chrome storage
+        await new Promise((resolve, reject) => {
+          chrome.storage.local.set(storageData, () => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              console.log(`Manual summary saved with key: ${summaryKey}`);
+              resolve();
+            }
+          });
+        });
+        
+        // Show success feedback
+        saveBtn.textContent = '✅ Saved!';
+        saveBtn.style.background = '#4CAF50';
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+          saveBtn.textContent = originalText;
+          saveBtn.style.background = '#2196F3';
+          saveBtn.disabled = false;
+        }, 2000);
+        
+      } catch (error) {
+        console.error('Error saving summary:', error);
+        
+        // Show error feedback
+        saveBtn.textContent = '❌ Error!';
+        saveBtn.style.background = '#f44336';
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+          saveBtn.textContent = '💾 Save to Notes';
+          saveBtn.style.background = '#2196F3';
+          saveBtn.disabled = false;
+        }, 2000);
+      }
+    });
+  }
 }
 
 // Load and display saved notes
@@ -1469,7 +1454,7 @@ async function loadSavedNotes(contentDiv) {
                 <h4 style="margin: 0; color: #333;">📊 ${date}</h4>
                 ${filterBadge}
               </div>
-              <button onclick="this.parentElement.parentElement.remove()" style="
+              <button class="delete-note-btn" data-key="${summary.key}" style="
                 background: #f44336;
                 color: white;
                 border: none;
@@ -1477,7 +1462,8 @@ async function loadSavedNotes(contentDiv) {
                 border-radius: 4px;
                 cursor: pointer;
                 font-size: 12px;
-              ">Delete</button>
+                transition: background 0.3s ease;
+              " onmouseover="this.style.background='#d32f2f'" onmouseout="this.style.background='#f44336'">Delete</button>
             </div>
             <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
               Messages: ${summary.messageCount || 'N/A'}
@@ -1499,11 +1485,115 @@ async function loadSavedNotes(contentDiv) {
       }).join('');
       
       contentDiv.innerHTML = `
-        <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
           <h3 style="color: #2196F3; margin: 0;">📚 Saved Notes (${summaries.length})</h3>
+          <button id="delete-all-notes-btn" style="
+            background: #FF5722;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s ease;
+          " onmouseover="this.style.background='#E64A19'" onmouseout="this.style.background='#FF5722'">🗑️ Delete All</button>
         </div>
         ${notesHtml}
       `;
+      
+      // Add delete button event listeners
+      const deleteButtons = contentDiv.querySelectorAll('.delete-note-btn');
+      deleteButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const key = button.getAttribute('data-key');
+          const confirmDelete = confirm('Are you sure you want to delete this note?');
+          
+          if (confirmDelete && key) {
+            try {
+              // Delete from Chrome storage
+              await new Promise((resolve) => {
+                chrome.storage.local.remove([key], () => {
+                  console.log(`Deleted note with key: ${key}`);
+                  resolve();
+                });
+              });
+              
+              // Show success feedback
+              button.textContent = 'Deleted!';
+              button.style.background = '#4CAF50';
+              button.disabled = true;
+              
+              // Refresh the notes list after a short delay
+              setTimeout(() => {
+                loadSavedNotes(contentDiv);
+              }, 1000);
+              
+            } catch (error) {
+              console.error('Error deleting note:', error);
+              button.textContent = 'Error!';
+              button.style.background = '#FF5722';
+              
+              // Reset button after 2 seconds
+              setTimeout(() => {
+                button.textContent = 'Delete';
+                button.style.background = '#f44336';
+                button.disabled = false;
+              }, 2000);
+            }
+          }
+        });
+      });
+      
+      // Add delete all button event listener
+      const deleteAllBtn = contentDiv.querySelector('#delete-all-notes-btn');
+      if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const confirmDeleteAll = confirm(`Are you sure you want to delete ALL ${summaries.length} saved notes? This action cannot be undone.`);
+          
+          if (confirmDeleteAll) {
+            try {
+              // Get all summary keys
+              const keysToDelete = summaries.map(s => s.key);
+              
+              // Delete all from Chrome storage
+              await new Promise((resolve) => {
+                chrome.storage.local.remove(keysToDelete, () => {
+                  console.log(`Deleted ${keysToDelete.length} notes`);
+                  resolve();
+                });
+              });
+              
+              // Show success feedback
+              deleteAllBtn.textContent = '✅ All Deleted!';
+              deleteAllBtn.style.background = '#4CAF50';
+              deleteAllBtn.disabled = true;
+              
+              // Refresh the notes list after a short delay
+              setTimeout(() => {
+                loadSavedNotes(contentDiv);
+              }, 1500);
+              
+            } catch (error) {
+              console.error('Error deleting all notes:', error);
+              deleteAllBtn.textContent = 'Error!';
+              deleteAllBtn.style.background = '#F44336';
+              
+              // Reset button after 2 seconds
+              setTimeout(() => {
+                deleteAllBtn.textContent = '🗑️ Delete All';
+                deleteAllBtn.style.background = '#FF5722';
+                deleteAllBtn.disabled = false;
+              }, 2000);
+            }
+          }
+        });
+      }
     });
     
   } catch (error) {
