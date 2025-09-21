@@ -1,0 +1,86 @@
+/* Content script styles for 1688 Chat Translator */
+
+.translation-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 107, 53, 0.1),
+    rgba(255, 107, 53, 0.05)
+  );
+  border: 1px solid #ff6b35;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #d84315;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  word-wrap: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.translation-overlay:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 107, 53, 0.15),
+    rgba(255, 107, 53, 0.08)
+  );
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+}
+
+.translation-overlay::before {
+  content: "🇧🇩 ";
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.suggestion-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(33, 150, 243, 0.1),
+    rgba(33, 150, 243, 0.05)
+  );
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  font-size: 14px;
+  color: #1565c0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.suggestion-overlay:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(33, 150, 243, 0.15),
+    rgba(33, 150, 243, 0.08)
+  );
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+}
+
+.suggestion-overlay::before {
+  content: "💡 ";
+  font-size: 14px;
+  margin-right: 6px;
+}
+
+/* Hide/show toggle for overlays */
+.translation-overlay.hidden,
+.suggestion-overlay.hidden {
+  display: none !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .translation-overlay,
+  .suggestion-overlay {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
