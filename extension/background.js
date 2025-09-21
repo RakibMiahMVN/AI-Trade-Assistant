@@ -62,6 +62,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true; // Keep message channel open for async response
   }
+
+  if (request.action === "generate_conversation_summary") {
+    generateConversationSummary(request.messages, request.targetLanguage)
+      .then((summary) => {
+        sendResponse({ summary });
+      })
+      .catch((error) => {
+        console.error("Conversation summary error:", error);
+        sendResponse({ error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
 });
 
 // Translate text using Google Translate unofficial API
@@ -785,6 +797,126 @@ Translate naturally and contextually appropriate for business communication.`,
 
     // Fallback: return a generic message
     return "翻译失败，请重试"; // Translation failed, please try again
+  }
+}
+
+// Generate a conversation summary using Groq API
+async function generateConversationSummary(messages, targetLanguage) {
+  try {
+    // Get API key and model from storage
+    const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
+    const API_KEY = result.groqApiKey;
+    const MODEL = result.groqModel || "llama-3.1-8b-instant";
+
+    if (!API_KEY) {
+      throw new Error("No API key provided");
+    }
+
+    console.log("Using model for summary:", MODEL);
+
+    const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
+
+    // Format messages for the AI prompt
+    const formattedConversation = messages.map(msg => {
+      return `${msg.sender.toUpperCase()}: ${msg.text}`;
+    }).join('\n');
+
+    // Determine language for summary output
+    const languageMap = {
+      'en': 'English',
+      'bn': 'Bengali',
+      'hi': 'Hindi',
+      'ur': 'Urdu',
+      'ar': 'Arabic',
+      'es': 'Spanish',
+      'fr': 'French',
+      'de': 'German',
+      'it': 'Italian',
+      'pt': 'Portuguese',
+      'ru': 'Russian',
+      'ja': 'Japanese',
+      'ko': 'Korean',
+      'th': 'Thai',
+      'vi': 'Vietnamese',
+      'zh': 'Chinese'
+    };
+    
+    const outputLanguage = languageMap[targetLanguage] || 'English';
+    
+    const userMessage = `Here is a conversation between a buyer and seller:
+
+${formattedConversation}
+
+Please provide a concise summary of this conversation in ${outputLanguage}. Include:
+1. The main topic or product being discussed
+2. Key points made by both parties
+3. Any agreements or disagreements
+4. Current state of the negotiation
+5. Next steps or pending questions
+
+Format with bullet points for clarity.`;
+
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert trade assistant that specializes in summarizing buyer-seller negotiations. Provide clear, concise summaries that capture the essential elements of commercial conversations."
+        },
+        {
+          role: "user",
+          content: userMessage
+        }
+      ],
+      temperature: 0.3, // Slightly creative but mostly factual
+      max_tokens: 500 // Allow for detailed summary
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Groq API Error Response:", response.status, errorText);
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log("Conversation summary response:", data);
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in Groq API response");
+    }
+
+    console.log("Conversation summary result:", content.trim());
+    return content.trim();
+
+  } catch (error) {
+    console.error("Conversation summary error:", error);
+
+    if (error.name === "AbortError") {
+      throw new Error("Summary generation timed out. Please try again.");
+    }
+
+    if (error.message.includes("400")) {
+      throw new Error("API configuration error. Please check your API key and model selection.");
+    }
+
+    // Rethrow the error to be handled by the caller
+    throw error;
   }
 }
 
