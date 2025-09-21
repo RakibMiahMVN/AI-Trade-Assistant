@@ -14,17 +14,26 @@ function scanForSellerMessages() {
 
     if (chineseText) {
       try {
-        // Request translation from background script
+        // Get buyer language from storage
+        const result = await chrome.storage.sync.get(["buyerLanguage"]);
+        const buyerLanguage = result.buyerLanguage || "en";
+
+        // Request translation from background script (Chinese to buyer language)
         const response = await chrome.runtime.sendMessage({
           action: "translate",
           text: chineseText,
           from: "zh",
-          to: "bn",
+          to: buyerLanguage,
         });
 
         if (response.translation) {
           console.log("Seller translation result:", response.translation);
-          addTranslationOverlay(msgElement, response.translation, "seller");
+          addTranslationOverlay(
+            msgElement,
+            response.translation,
+            "seller",
+            buyerLanguage
+          );
           msgElement.classList.add("translated");
         }
       } catch (error) {
@@ -32,6 +41,9 @@ function scanForSellerMessages() {
       }
     }
   });
+
+  // Add intention analysis buttons to the last 3 seller messages
+  addIntentionButtons();
 }
 
 // Detect buyer messages and add translation overlays
@@ -45,17 +57,27 @@ function scanForBuyerMessages() {
 
     if (buyerText) {
       try {
-        // Request translation from background script
+        // Get buyer language from storage
+        const result = await chrome.storage.sync.get(["buyerLanguage"]);
+        const buyerLanguage = result.buyerLanguage || "en";
+
+        // Request translation from background script (Chinese to buyer language)
+        // Assuming buyer messages are in Chinese (as they appear on the site)
         const response = await chrome.runtime.sendMessage({
           action: "translate",
           text: buyerText,
           from: "zh",
-          to: "bn",
+          to: buyerLanguage,
         });
 
         if (response.translation) {
           console.log("Buyer translation result:", response.translation);
-          addTranslationOverlay(msgElement, response.translation, "buyer");
+          addTranslationOverlay(
+            msgElement,
+            response.translation,
+            "buyer",
+            buyerLanguage
+          );
           msgElement.classList.add("translated");
         }
       } catch (error) {
@@ -66,13 +88,43 @@ function scanForBuyerMessages() {
 }
 
 // Add translation overlay to message
-function addTranslationOverlay(messageElement, translation, type = "seller") {
+function addTranslationOverlay(
+  messageElement,
+  translation,
+  type = "seller",
+  targetLanguage = "en"
+) {
   const overlay = document.createElement("div");
   overlay.className = `translation-overlay ${type}-translation`;
 
+  // Get flag emoji based on target language
+  const getFlagEmoji = (lang) => {
+    const flags = {
+      en: "🇺🇸",
+      bn: "🇧🇩",
+      hi: "🇮🇳",
+      ur: "🇵🇰",
+      ar: "🇸🇦",
+      es: "🇪🇸",
+      fr: "🇫🇷",
+      de: "🇩🇪",
+      it: "🇮🇹",
+      pt: "🇵🇹",
+      ru: "🇷🇺",
+      ja: "🇯🇵",
+      ko: "🇰🇷",
+      th: "🇹🇭",
+      vi: "🇻🇳",
+      zh: "🇨🇳",
+    };
+    return flags[lang] || "🌐";
+  };
+
+  const flagEmoji = getFlagEmoji(targetLanguage);
+
   if (type === "buyer") {
-    // Buyer messages: show Chinese translation with blue styling
-    overlay.textContent = `🇨🇳 ${translation}`;
+    // Buyer messages: show translation in buyer language with blue styling
+    overlay.textContent = `${flagEmoji} ${translation}`;
     overlay.style.cssText = `
       background: rgba(33, 150, 243, 0.1);
       border: 1px solid #2196f3;
@@ -85,8 +137,8 @@ function addTranslationOverlay(messageElement, translation, type = "seller") {
       cursor: pointer;
     `;
   } else {
-    // Seller messages: show Bengali translation with orange styling
-    overlay.textContent = `🇧🇩 ${translation}`;
+    // Seller messages: show translation in buyer language with orange styling
+    overlay.textContent = `${flagEmoji} ${translation}`;
     overlay.style.cssText = `
       background: rgba(255, 107, 53, 0.1);
       border: 1px solid #ff6b35;
@@ -105,6 +157,375 @@ function addTranslationOverlay(messageElement, translation, type = "seller") {
   };
 
   messageElement.appendChild(overlay);
+}
+
+// Add intention analysis buttons to the last 3 seller messages
+function addIntentionButtons() {
+  const allSellerMessages = document.querySelectorAll(".seller-msg");
+  if (allSellerMessages.length === 0) return;
+
+  // Get the last 3 seller messages
+  const lastThreeSellerMessages = Array.from(allSellerMessages).slice(-3);
+
+  lastThreeSellerMessages.forEach((msgElement) => {
+    // Check if button already exists
+    if (msgElement.parentNode.querySelector(".intention-btn")) return;
+
+    // Create intention analysis button
+    const intentionBtn = document.createElement("button");
+    intentionBtn.className = "intention-btn";
+    intentionBtn.textContent = "?";
+    intentionBtn.title = "Analyze seller intention";
+    intentionBtn.style.cssText = `
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #ff6b35;
+      color: white;
+      border: 2px solid white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      z-index: 10;
+    `;
+
+    intentionBtn.onmouseover = () => {
+      intentionBtn.style.background = "#e55a2b";
+      intentionBtn.style.transform = "scale(1.1)";
+    };
+
+    intentionBtn.onmouseout = () => {
+      intentionBtn.style.background = "#ff6b35";
+      intentionBtn.style.transform = "scale(1)";
+    };
+
+    intentionBtn.onclick = () => {
+      analyzeSellerIntention(msgElement);
+    };
+
+    // Make message content position relative for absolute positioning
+    const messageContent = msgElement.parentNode;
+    if (
+      messageContent &&
+      getComputedStyle(messageContent).position === "static"
+    ) {
+      messageContent.style.position = "relative";
+    }
+
+    // Insert button into the message content
+    messageContent.appendChild(intentionBtn);
+  });
+}
+
+// Analyze seller message intention
+function analyzeSellerIntention(messageElement) {
+  const chineseText = messageElement.textContent.trim();
+  if (!chineseText) return;
+
+  // Show loading state
+  const btn = messageElement.parentNode.querySelector(".intention-btn");
+  if (btn) {
+    btn.textContent = "...";
+    btn.disabled = true;
+  }
+
+  try {
+    chrome.runtime.sendMessage(
+      {
+        action: "analyze_intention",
+        text: chineseText,
+      },
+      (response) => {
+        if (response && response.analysis) {
+          showIntentionAnalysis(response.analysis, messageElement);
+        } else {
+          console.error("Failed to analyze intention");
+          showIntentionAnalysis(
+            {
+              tone: "Error",
+              firmness: "Unable to analyze",
+              key_points: ["Analysis failed"],
+            },
+            messageElement
+          );
+        }
+
+        // Reset button
+        if (btn) {
+          btn.textContent = "?";
+          btn.disabled = false;
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Extension context error:", error);
+    if (btn) {
+      btn.textContent = "?";
+      btn.disabled = false;
+    }
+  }
+}
+
+// Show intention analysis in a popup
+async function showIntentionAnalysis(analysis, messageElement) {
+  // Get buyer's language from storage
+  let buyerLanguage = "en";
+  try {
+    const result = await chrome.storage.sync.get(["buyerLanguage"]);
+    buyerLanguage = result.buyerLanguage || "en";
+  } catch (error) {
+    console.error("Failed to get buyer language:", error);
+  }
+
+  // Remove existing analysis popup
+  const existingPopup = document.querySelector(".intention-analysis-popup");
+  if (existingPopup) {
+    existingPopup.remove();
+  }
+
+  // Create analysis popup
+  const popup = document.createElement("div");
+  popup.className = "intention-analysis-popup";
+  popup.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    z-index: 10001;
+    font-family: Arial, sans-serif;
+    border: 2px solid #ff6b35;
+  `;
+
+  const title = document.createElement("h3");
+  title.textContent = "🤔 Seller Message Analysis";
+  title.style.cssText = `
+    margin: 0 0 15px 0;
+    color: #ff6b35;
+    font-size: 18px;
+    text-align: center;
+  `;
+
+  const content = document.createElement("div");
+  content.style.cssText = `
+    line-height: 1.6;
+  `;
+
+  // Show loading state while translating
+  const loadingDiv = document.createElement("div");
+  loadingDiv.textContent = "Translating analysis...";
+  loadingDiv.style.cssText = `text-align: center; color: #666; padding: 20px;`;
+  content.appendChild(loadingDiv);
+
+  popup.appendChild(title);
+  popup.appendChild(content);
+  document.body.appendChild(popup);
+
+  try {
+    // Translate analysis fields to buyer's language
+    const translatedAnalysis = {
+      tone: analysis.tone,
+      firmness: analysis.firmness,
+      moq_flexibility: analysis.moq_flexibility,
+      key_points: analysis.key_points || [],
+    };
+
+    // Only translate if buyer language is not English
+    if (buyerLanguage !== "en") {
+      // Translate each field
+      const fieldsToTranslate = [
+        analysis.tone,
+        analysis.firmness,
+        analysis.moq_flexibility,
+        ...analysis.key_points,
+      ].filter((text) => text && text.trim());
+
+      const translations = await Promise.all(
+        fieldsToTranslate.map((text) =>
+          chrome.runtime
+            .sendMessage({
+              action: "translate",
+              text: text,
+              from: "en",
+              to: buyerLanguage,
+            })
+            .then((response) => response.translation || text)
+            .catch((error) => {
+              console.error("Translation error:", error);
+              return text; // Fallback to original text
+            })
+        )
+      );
+
+      // Map translations back to analysis object
+      translatedAnalysis.tone = translations[0] || analysis.tone;
+      translatedAnalysis.firmness = translations[1] || analysis.firmness;
+      translatedAnalysis.moq_flexibility =
+        translations[2] || analysis.moq_flexibility;
+      translatedAnalysis.key_points = translations
+        .slice(3)
+        .map((translated, index) => translated || analysis.key_points[index]);
+    }
+
+    // Clear loading state and display translated analysis
+    content.innerHTML = "";
+
+    // Display analysis results with both English and translated versions
+    const toneDiv = document.createElement("div");
+    toneDiv.style.cssText = `margin-bottom: 12px; color: #333;`;
+
+    const firmnessDiv = document.createElement("div");
+    firmnessDiv.style.cssText = `margin-bottom: 12px; color: #333;`;
+
+    const moqDiv = document.createElement("div");
+    moqDiv.style.cssText = `margin-bottom: 12px; color: #333;`;
+
+    const keyPointsDiv = document.createElement("div");
+    keyPointsDiv.style.cssText = `margin-bottom: 8px; color: #333;`;
+
+    // Show English versions first
+    toneDiv.innerHTML += `<strong>Tone:</strong> <span style="color: #1565c0;">${
+      analysis.tone || "Neutral"
+    }</span>`;
+    firmnessDiv.innerHTML += `<strong>Price Firmness:</strong> <span style="color: #1565c0;">${
+      analysis.firmness || "Moderate"
+    }</span>`;
+    moqDiv.innerHTML += `<strong>MOQ Flexibility:</strong> <span style="color: #1565c0;">${
+      analysis.moq_flexibility || "Standard"
+    }</span>`;
+    keyPointsDiv.innerHTML += `<strong>Key Points:</strong>`;
+
+    // Add Bengali translations if buyer language is Bengali
+    if (buyerLanguage === "bn") {
+      toneDiv.innerHTML += `<br><span style="color: #d32f2f; font-size: 13px;">${
+        translatedAnalysis.tone || analysis.tone
+      }</span>`;
+      firmnessDiv.innerHTML += `<br><span style="color: #d32f2f; font-size: 13px;">${
+        translatedAnalysis.firmness || analysis.firmness
+      }</span>`;
+      moqDiv.innerHTML += `<br><span style="color: #d32f2f; font-size: 13px;">${
+        translatedAnalysis.moq_flexibility || analysis.moq_flexibility
+      }</span>`;
+    }
+
+    const pointsList = document.createElement("ul");
+    pointsList.style.cssText = `margin: 5px 0 0 20px; padding: 0;`;
+
+    if (analysis.key_points && Array.isArray(analysis.key_points)) {
+      analysis.key_points.forEach((point, index) => {
+        const li = document.createElement("li");
+        li.style.cssText = `margin-bottom: 6px; color: #555;`;
+
+        // English version
+        li.innerHTML = `<span style="color: #1565c0;">${point}</span>`;
+
+        // Bengali translation if applicable
+        if (buyerLanguage === "bn" && translatedAnalysis.key_points[index]) {
+          li.innerHTML += `<br><span style="color: #d32f2f; font-size: 13px;">${translatedAnalysis.key_points[index]}</span>`;
+        }
+
+        pointsList.appendChild(li);
+      });
+    }
+
+    content.appendChild(toneDiv);
+    content.appendChild(firmnessDiv);
+    content.appendChild(moqDiv);
+    content.appendChild(keyPointsDiv);
+    content.appendChild(pointsList);
+  } catch (error) {
+    console.error("Error displaying analysis:", error);
+    // Fallback to original analysis without translation
+    content.innerHTML = "";
+
+    const toneDiv = document.createElement("div");
+    toneDiv.style.cssText = `margin-bottom: 12px; color: #333;`;
+
+    const firmnessDiv = document.createElement("div");
+    firmnessDiv.style.cssText = `margin-bottom: 12px; color: #333;`;
+
+    const moqDiv = document.createElement("div");
+    moqDiv.style.cssText = `margin-bottom: 12px; color: #333;`;
+
+    const keyPointsDiv = document.createElement("div");
+    keyPointsDiv.style.cssText = `margin-bottom: 8px; color: #333;`;
+
+    // Show English versions
+    toneDiv.innerHTML = `<strong>Tone:</strong> <span style="color: #1565c0;">${
+      analysis.tone || "Neutral"
+    }</span>`;
+    firmnessDiv.innerHTML = `<strong>Price Firmness:</strong> <span style="color: #1565c0;">${
+      analysis.firmness || "Moderate"
+    }</span>`;
+    moqDiv.innerHTML = `<strong>MOQ Flexibility:</strong> <span style="color: #1565c0;">${
+      analysis.moq_flexibility || "Standard"
+    }</span>`;
+    keyPointsDiv.innerHTML = `<strong>Key Points:</strong>`;
+
+    // Add Bengali note if buyer language is Bengali
+    if (buyerLanguage === "bn") {
+      toneDiv.innerHTML += `<br><span style="color: #666; font-size: 12px;">(Translation failed - showing English only)</span>`;
+      firmnessDiv.innerHTML += `<br><span style="color: #666; font-size: 12px;">(Translation failed - showing English only)</span>`;
+      moqDiv.innerHTML += `<br><span style="color: #666; font-size: 12px;">(Translation failed - showing English only)</span>`;
+    }
+
+    const pointsList = document.createElement("ul");
+    pointsList.style.cssText = `margin: 5px 0 0 20px; padding: 0;`;
+    if (analysis.key_points && Array.isArray(analysis.key_points)) {
+      analysis.key_points.forEach((point) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span style="color: #1565c0;">${point}</span>`;
+        li.style.cssText = `margin-bottom: 6px; color: #555;`;
+        pointsList.appendChild(li);
+      });
+    }
+
+    content.appendChild(toneDiv);
+    content.appendChild(firmnessDiv);
+    content.appendChild(moqDiv);
+    content.appendChild(keyPointsDiv);
+    content.appendChild(pointsList);
+  }
+
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "Close";
+  closeBtn.style.cssText = `
+    display: block;
+    margin: 15px auto 0;
+    padding: 8px 16px;
+    background: #ff6b35;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  `;
+
+  closeBtn.onclick = () => {
+    popup.remove();
+  };
+
+  content.appendChild(closeBtn);
+
+  // Close on background click
+  popup.addEventListener("click", (e) => {
+    if (e.target === popup) {
+      popup.remove();
+    }
+  });
 }
 
 // Detect input field and add suggestion functionality
@@ -355,6 +776,7 @@ function setupMessageObserver() {
       setTimeout(() => {
         scanForSellerMessages();
         scanForBuyerMessages();
+        addIntentionButtons(); // Ensure intention buttons are added to new messages
       }, 500);
     }
   });
@@ -486,10 +908,17 @@ function showSmartSuggestions(suggestions, inputField) {
         container.style.display = "none";
       };
 
-      // Bengali text
-      const bengaliText = document.createElement("span");
-      bengaliText.textContent = suggestion.bengali;
-      bengaliText.style.cssText = `
+      // Get buyer's language text (dynamic key)
+      const buyerLanguageText = Object.keys(suggestion).find(
+        (key) => key !== "chinese"
+      );
+      const translatedText =
+        suggestion[buyerLanguageText] || suggestion.chinese;
+
+      // Translated text in buyer's language
+      const translatedTextSpan = document.createElement("span");
+      translatedTextSpan.textContent = translatedText;
+      translatedTextSpan.style.cssText = `
         flex: 1;
         font-size: 13px;
         color: #666;
@@ -499,7 +928,7 @@ function showSmartSuggestions(suggestions, inputField) {
       chinesePart.appendChild(chineseText);
       chinesePart.appendChild(copyBtn);
       item.appendChild(chinesePart);
-      item.appendChild(bengaliText);
+      item.appendChild(translatedTextSpan);
       container.appendChild(item);
     });
 

@@ -4,23 +4,34 @@ document.addEventListener("DOMContentLoaded", function () {
   const currentPageEl = document.getElementById("current-page");
   const apiKeyInput = document.getElementById("api-key-input");
   const modelSelect = document.getElementById("model-select");
+  const buyerLanguageSelect = document.getElementById("buyer-language-select");
   const saveApiKeyBtn = document.getElementById("save-api-key");
   const saveStatus = document.getElementById("save-status");
 
   // Load saved settings on popup open
-  chrome.storage.sync.get(["groqApiKey", "groqModel"], function (result) {
-    if (result.groqApiKey) {
-      apiKeyInput.value = result.groqApiKey;
+  chrome.storage.sync.get(
+    ["groqApiKey", "groqModel", "buyerLanguage"],
+    function (result) {
+      if (result.groqApiKey) {
+        apiKeyInput.value = result.groqApiKey;
+      }
+      if (result.groqModel) {
+        modelSelect.value = result.groqModel;
+      }
+      if (result.buyerLanguage) {
+        buyerLanguageSelect.value = result.buyerLanguage;
+      } else {
+        // Default to English if not set
+        buyerLanguageSelect.value = "en";
+      }
     }
-    if (result.groqModel) {
-      modelSelect.value = result.groqModel;
-    }
-  });
+  );
 
   // Save settings functionality
   saveApiKeyBtn.addEventListener("click", function () {
     const apiKey = apiKeyInput.value.trim();
     const model = modelSelect.value;
+    const buyerLanguage = buyerLanguageSelect.value;
 
     if (!apiKey) {
       saveStatus.textContent = "Please enter an API key";
@@ -38,6 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
       {
         groqApiKey: apiKey,
         groqModel: model,
+        buyerLanguage: buyerLanguage,
       },
       function () {
         saveStatus.textContent = "Settings saved successfully!";

@@ -38,6 +38,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true; // Keep message channel open for async response
   }
+
+  if (request.action === "analyze_intention") {
+    analyzeSellerIntention(request.text)
+      .then((analysis) => {
+        sendResponse({ analysis });
+      })
+      .catch((error) => {
+        console.error("Intention analysis error:", error);
+        sendResponse({ error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
 });
 
 // Translate text using Google Translate unofficial API
@@ -188,21 +200,34 @@ async function generateSuggestions(sellerMessage) {
 
 // Generate smart suggestions based on conversation history and buyer intention
 async function generateSmartSuggestions(messages, intention) {
-  // Get API key and model from Chrome storage
-  const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
+  // Get API key, model, and buyer language from Chrome storage
+  const result = await chrome.storage.sync.get([
+    "groqApiKey",
+    "groqModel",
+    "buyerLanguage",
+  ]);
   const API_KEY = result.groqApiKey;
   const MODEL = result.groqModel || "llama-3.1-8b-instant"; // Use a more reliable model
+  const buyerLanguage = result.buyerLanguage || "en";
 
   if (!API_KEY || API_KEY.trim() === "") {
     console.log("Groq API key not set. Please configure in extension popup.");
+    const errorMsg =
+      buyerLanguage === "bn"
+        ? "অনুগ্রহ করে আপনার Groq API কী সেট করুন"
+        : "Please set your Groq API key";
+    const errorMsg2 =
+      buyerLanguage === "bn"
+        ? "অনুগ্রহ করে এক্সটেনশন সেটিংসে API কী কনফিগার করুন"
+        : "Please configure API key in extension settings";
     return [
       {
         chinese: "请设置您的 Groq API 密钥",
-        bengali: "অনুগ্রহ করে আপনার Groq API কী সেট করুন",
+        [buyerLanguage]: errorMsg,
       },
       {
         chinese: "请在扩展设置中配置 API 密钥",
-        bengali: "অনুগ্রহ করে এক্সটেনশন সেটিংসে API কী কনফিগার করুন",
+        [buyerLanguage]: errorMsg2,
       },
     ];
   }
@@ -332,17 +357,21 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
     const bilingualSuggestions = [];
     for (const chinese of chineseSuggestions) {
       try {
-        // Translate to Bengali
-        const bengaliTranslation = await translateText(chinese, "zh", "bn");
+        // Translate to buyer's language
+        const buyerTranslation = await translateText(
+          chinese,
+          "zh",
+          buyerLanguage
+        );
         bilingualSuggestions.push({
           chinese: chinese,
-          bengali: bengaliTranslation || chinese,
+          [buyerLanguage]: buyerTranslation || chinese,
         });
       } catch (error) {
         console.error("Translation error:", error);
         bilingualSuggestions.push({
           chinese: chinese,
-          bengali: chinese, // Fallback to Chinese if translation fails
+          [buyerLanguage]: chinese, // Fallback to Chinese if translation fails
         });
       }
     }
@@ -352,11 +381,17 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
       const fallbacks = [
         {
           chinese: "您好，我想了解更多关于这个产品的信息。",
-          bengali: "হ্যালো, আমি এই পণ্য সম্পর্কে আরও তথ্য জানতে চাই।",
+          [buyerLanguage]:
+            buyerLanguage === "bn"
+              ? "হ্যালো, আমি এই পণ্য সম্পর্কে আরও তথ্য জানতে চাই।"
+              : "Hello, I want to know more about this product.",
         },
         {
           chinese: "我们可以讨论一下价格吗？",
-          bengali: "আমরা দাম নিয়ে আলোচনা করতে পারি?",
+          [buyerLanguage]:
+            buyerLanguage === "bn"
+              ? "আমরা দাম নিয়ে আলোচনা করতে পারি?"
+              : "Can we discuss the price?",
         },
       ];
       return fallbacks.slice(0, 2);
@@ -369,45 +404,233 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
     // Handle specific error types
     if (error.name === "AbortError") {
       console.error("Request timed out");
+      const timeoutMsg1 =
+        buyerLanguage === "bn"
+          ? "অনুরোধের সময় শেষ হয়েছে, অনুগ্রহ করে পরে আবার চেষ্টা করুন"
+          : "Request timed out, please try again later";
+      const timeoutMsg2 =
+        buyerLanguage === "bn"
+          ? "নেটওয়ার্ক সংযোগ সমস্যা, অনুগ্রহ করে আপনার সংযোগ পরীক্ষা করুন"
+          : "Network connection issue, please check your connection";
       return [
         {
           chinese: "请求超时，请稍后重试",
-          bengali: "অনুরোধের সময় শেষ হয়েছে, অনুগ্রহ করে পরে আবার চেষ্টা করুন",
+          [buyerLanguage]: timeoutMsg1,
         },
         {
           chinese: "网络连接问题，请检查您的连接",
-          bengali:
-            "নেটওয়ার্ক সংযোগ সমস্যা, অনুগ্রহ করে আপনার সংযোগ পরীক্ষা করুন",
+          [buyerLanguage]: timeoutMsg2,
         },
       ];
     }
 
     if (error.message.includes("400")) {
       console.error("Bad request - likely invalid API key or model");
+      const apiErrorMsg1 =
+        buyerLanguage === "bn"
+          ? "API কনফিগারেশন ত্রুটি, অনুগ্রহ করে আপনার কী পরীক্ষা করুন"
+          : "API configuration error, please check your key";
+      const apiErrorMsg2 =
+        buyerLanguage === "bn"
+          ? "অনুগ্রহ করে এক্সটেনশন সেটিংসে API কী আপডেট করুন"
+          : "Please update API key in extension settings";
       return [
         {
           chinese: "API 配置错误，请检查您的密钥",
-          bengali: "API কনফিগারেশন ত্রুটি, অনুগ্রহ করে আপনার কী পরীক্ষা করুন",
+          [buyerLanguage]: apiErrorMsg1,
         },
         {
           chinese: "请在扩展设置中更新 API 密钥",
-          bengali: "অনুগ্রহ করে এক্সটেনশন সেটিংসে API কী আপডেট করুন",
+          [buyerLanguage]: apiErrorMsg2,
         },
       ];
     }
 
     // Fallback suggestions for other errors
+    const fallbackMsg1 =
+      buyerLanguage === "bn"
+        ? "হ্যালো, আমি এই পণ্য সম্পর্কে আরও তথ্য জানতে চাই।"
+        : "Hello, I want to know more about this product.";
+    const fallbackMsg2 =
+      buyerLanguage === "bn"
+        ? "আমরা দাম নিয়ে আলোচনা করতে পারি?"
+        : "Can we discuss the price?";
     return [
       {
         chinese: "您好，我想了解更多关于这个产品的信息。",
-        bengali: "হ্যালো, আমি এই পণ্য সম্পর্কে আরও তথ্য জানতে চাই।",
+        [buyerLanguage]: fallbackMsg1,
       },
       {
         chinese: "我们可以讨论一下价格吗？",
-        bengali: "আমরা দাম নিয়ে আলোচনা করতে পারি?",
+        [buyerLanguage]: fallbackMsg2,
       },
     ];
   }
+}
+
+// Analyze seller message intention using AI
+async function analyzeSellerIntention(sellerMessage) {
+  // Get API key, model, and buyer language from Chrome storage
+  const result = await chrome.storage.sync.get([
+    "groqApiKey",
+    "groqModel",
+    "buyerLanguage",
+  ]);
+  const API_KEY = result.groqApiKey;
+  const MODEL = result.groqModel || "llama-3.1-8b-instant";
+  const buyerLanguage = result.buyerLanguage || "en";
+
+  if (!API_KEY || API_KEY.trim() === "") {
+    console.log("Groq API key not set. Please configure in extension popup.");
+    return {
+      tone: "Unable to analyze - API key not configured",
+      firmness: "Unknown",
+      moq_flexibility: "Unknown",
+      key_points: ["Please set your Groq API key in the extension settings"],
+    };
+  }
+
+  const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+  try {
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert business analyst specializing in Chinese e-commerce negotiations. Analyze the seller's message and provide a structured analysis in JSON format.
+
+Return ONLY a valid JSON object with this exact structure:
+{
+  "tone": "polite/professional/firm/aggressive/neutral",
+  "firmness": "very flexible/flexible/moderate/firm/very firm",
+  "moq_flexibility": "very flexible/flexible/standard/resistant/very resistant",
+  "key_points": ["array of 2-4 key insights about the seller's position, pricing stance, or negotiation approach"]
+}
+
+Focus on:
+- Tone: How polite/professional/firm the seller is
+- Price firmness: How willing they are to negotiate price
+- MOQ flexibility: How open they are to changing minimum order quantities
+- Key points: Important insights about their business approach or conditions`,
+        },
+        {
+          role: "user",
+          content: `Analyze this seller message and provide intention analysis: "${sellerMessage}"`,
+        },
+      ],
+      max_tokens: 300, // Reduced since we're generating in English
+      temperature: 0.3, // Lower temperature for more consistent analysis
+    };
+
+    console.log("Sending intention analysis request to Groq API");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Groq API Error Response:", response.status, errorText);
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log("Intention analysis response:", data);
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in Groq API response");
+    }
+
+    console.log("AI Analysis content:", content);
+
+    // Parse the JSON response
+    try {
+      const analysis = JSON.parse(content.trim());
+      return analysis;
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      // Try to extract information from non-JSON response
+      return extractAnalysisFromText(content, "en"); // Always extract in English
+    }
+  } catch (error) {
+    console.error("Groq API error:", error);
+
+    if (error.name === "AbortError") {
+      console.error("Request timed out");
+      return {
+        tone: "Analysis timed out",
+        firmness: "Unknown",
+        moq_flexibility: "Unknown",
+        key_points: ["Request timed out - please try again"],
+      };
+    }
+
+    if (error.message.includes("400")) {
+      console.error("Bad request - likely invalid API key or model");
+      return {
+        tone: "API configuration error",
+        firmness: "Unknown",
+        moq_flexibility: "Unknown",
+        key_points: ["Please check your API key and model settings"],
+      };
+    }
+
+    // Fallback analysis
+    return {
+      tone: "Unable to analyze",
+      firmness: "Unknown",
+      moq_flexibility: "Unknown",
+      key_points: [
+        "Analysis failed due to API error",
+        "Please try again later",
+      ],
+    };
+  }
+}
+
+// Extract analysis from text response if JSON parsing fails
+function extractAnalysisFromText(text, buyerLanguage = "en") {
+  // Simple fallback parsing - always in English
+  const analysis = {
+    tone: "Neutral",
+    firmness: "Moderate",
+    moq_flexibility: "Standard",
+    key_points: [],
+  };
+
+  // Try to extract key information
+  if (text.toLowerCase().includes("firm")) {
+    analysis.firmness = "Firm";
+  } else if (text.toLowerCase().includes("flexible")) {
+    analysis.firmness = "Flexible";
+  }
+
+  if (text.toLowerCase().includes("polite")) {
+    analysis.tone = "Polite";
+  } else if (text.toLowerCase().includes("professional")) {
+    analysis.tone = "Professional";
+  }
+
+  analysis.key_points = [
+    "Analysis completed with limited detail",
+    "Consider the seller's overall communication style",
+    "Look for specific pricing and MOQ mentions",
+  ];
+
+  return analysis;
 }
 
 // Handle extension installation
