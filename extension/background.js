@@ -63,6 +63,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 
+  if (request.action === "generate_seller_response") {
+    generateSellerResponse(request.conversation)
+      .then((sellerResponse) => {
+        sendResponse({ sellerResponse });
+      })
+      .catch((error) => {
+        console.error("Seller response generation error:", error);
+        sendResponse({ error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
+
+  if (request.action === "analyze_negotiation_result") {
+    analyzeNegotiationResult(request.conversation)
+      .then((analysis) => {
+        sendResponse({ analysis });
+      })
+      .catch((error) => {
+        console.error("Negotiation analysis error:", error);
+        sendResponse({ error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
+
   if (request.action === "generate_conversation_summary") {
     generateConversationSummary(request.messages, request.targetLanguage)
       .then((summary) => {
@@ -780,8 +804,7 @@ Translate naturally and contextually appropriate for business communication.`,
     console.log("Banglish translation result:", content.trim());
 
     // Clean up the response (remove any extra text, quotes, etc.)
-    return content.trim().replace(/^["']|["']$/g, '');
-
+    return content.trim().replace(/^["']|["']$/g, "");
   } catch (error) {
     console.error("Banglish translation error:", error);
 
@@ -817,32 +840,34 @@ async function generateConversationSummary(messages, targetLanguage) {
     const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
 
     // Format messages for the AI prompt
-    const formattedConversation = messages.map(msg => {
-      return `${msg.sender.toUpperCase()}: ${msg.text}`;
-    }).join('\n');
+    const formattedConversation = messages
+      .map((msg) => {
+        return `${msg.sender.toUpperCase()}: ${msg.text}`;
+      })
+      .join("\n");
 
     // Determine language for summary output
     const languageMap = {
-      'en': 'English',
-      'bn': 'Bengali',
-      'hi': 'Hindi',
-      'ur': 'Urdu',
-      'ar': 'Arabic',
-      'es': 'Spanish',
-      'fr': 'French',
-      'de': 'German',
-      'it': 'Italian',
-      'pt': 'Portuguese',
-      'ru': 'Russian',
-      'ja': 'Japanese',
-      'ko': 'Korean',
-      'th': 'Thai',
-      'vi': 'Vietnamese',
-      'zh': 'Chinese'
+      en: "English",
+      bn: "Bengali",
+      hi: "Hindi",
+      ur: "Urdu",
+      ar: "Arabic",
+      es: "Spanish",
+      fr: "French",
+      de: "German",
+      it: "Italian",
+      pt: "Portuguese",
+      ru: "Russian",
+      ja: "Japanese",
+      ko: "Korean",
+      th: "Thai",
+      vi: "Vietnamese",
+      zh: "Chinese",
     };
-    
-    const outputLanguage = languageMap[targetLanguage] || 'English';
-    
+
+    const outputLanguage = languageMap[targetLanguage] || "English";
+
     const userMessage = `Here is a conversation between a buyer and seller:
 
 ${formattedConversation}
@@ -861,15 +886,16 @@ Format with bullet points for clarity.`;
       messages: [
         {
           role: "system",
-          content: "You are an expert trade assistant that specializes in summarizing buyer-seller negotiations. Provide clear, concise summaries that capture the essential elements of commercial conversations."
+          content:
+            "You are an expert trade assistant that specializes in summarizing buyer-seller negotiations. Provide clear, concise summaries that capture the essential elements of commercial conversations.",
         },
         {
           role: "user",
-          content: userMessage
-        }
+          content: userMessage,
+        },
       ],
       temperature: 0.3, // Slightly creative but mostly factual
-      max_tokens: 500 // Allow for detailed summary
+      max_tokens: 500, // Allow for detailed summary
     };
 
     const controller = new AbortController();
@@ -903,7 +929,6 @@ Format with bullet points for clarity.`;
 
     console.log("Conversation summary result:", content.trim());
     return content.trim();
-
   } catch (error) {
     console.error("Conversation summary error:", error);
 
@@ -912,7 +937,9 @@ Format with bullet points for clarity.`;
     }
 
     if (error.message.includes("400")) {
-      throw new Error("API configuration error. Please check your API key and model selection.");
+      throw new Error(
+        "API configuration error. Please check your API key and model selection."
+      );
     }
 
     // Rethrow the error to be handled by the caller
