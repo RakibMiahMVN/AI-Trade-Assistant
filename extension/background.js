@@ -40,7 +40,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "summarize_conversation") {
-    summarizeConversation(request.messages)
+    summarizeConversation(request.messages, request.summaryType, request.summaryValue)
       .then((summary) => {
         sendResponse({ summary });
       })
@@ -422,8 +422,8 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
   }
 }
 
-// Summarize conversation from last 10 messages
-async function summarizeConversation(messages) {
+// Summarize conversation from filtered messages
+async function summarizeConversation(messages, summaryType = 'messages', summaryValue = '10') {
   // Get API key and model from Chrome storage
   const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
   const API_KEY = result.groqApiKey;
@@ -440,23 +440,60 @@ async function summarizeConversation(messages) {
 
   const API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-  // Take only the last 10 messages
-  const last10Messages = messages.slice(-10);
-  
   // Format conversation for summarization
   let conversationText = "";
-  if (last10Messages && last10Messages.length > 0) {
-    conversationText = last10Messages
+  if (messages && messages.length > 0) {
+    conversationText = messages
       .map((msg, index) => 
         `${index + 1}. ${msg.type === "seller" ? "Seller" : "Buyer"}: ${msg.text}`
       )
       .join("\n");
   } else {
     return {
-      summary: "No conversation messages found to summarize.",
+      summary: `No conversation messages found for ${summaryType} filter.`,
       keyPoints: [],
       timestamp: new Date().toISOString(),
+      summaryType,
+      summaryValue,
+      messageCount: 0
     };
+  }
+
+  // Create context-specific prompts based on summary type
+  let systemPrompt = `You are an expert business analyst specializing in international trade conversations. Your task is to analyze conversations between buyers and Chinese sellers and create concise, actionable summaries.`;
+  let analysisContext = "";
+
+  switch (summaryType) {
+    case 'topic':
+      if (summaryValue === 'product') {
+        systemPrompt += ` Focus specifically on PRODUCT-RELATED discussions including specifications, quality, materials, features, models, and technical details.`;
+        analysisContext = "Focus on product specifications, quality discussions, and technical requirements.";
+      } else if (summaryValue === 'price') {
+        systemPrompt += ` Focus specifically on PRICING discussions including costs, discounts, negotiations, payment terms, and budget considerations.`;
+        analysisContext = "Focus on price negotiations, discounts, cost discussions, and payment terms.";
+      } else if (summaryValue === 'shipping') {
+        systemPrompt += ` Focus specifically on SHIPPING AND LOGISTICS discussions including delivery times, shipping costs, customs, and logistics arrangements.`;
+        analysisContext = "Focus on shipping methods, delivery times, logistics costs, and customs procedures.";
+      }
+      break;
+    
+    case 'time':
+      if (summaryValue === '30') {
+        analysisContext = "Analyze recent conversation from the last 30 minutes for immediate context and urgent matters.";
+      } else if (summaryValue === '60') {
+        analysisContext = "Analyze conversation from the last hour for recent developments and current status.";
+      } else if (summaryValue === '1440') {
+        analysisContext = "Analyze today's conversation for daily progress and overall discussion trends.";
+      }
+      break;
+    
+    case 'messages':
+      analysisContext = `Analyze the last ${summaryValue} messages for recent conversation context and current discussion points.`;
+      break;
+    
+    case 'all':
+      analysisContext = "Provide a comprehensive analysis of the entire conversation history for complete context and full negotiation overview.";
+      break;
   }
 
   try {
@@ -465,7 +502,9 @@ async function summarizeConversation(messages) {
       messages: [
         {
           role: "system",
-          content: `You are an expert business analyst specializing in international trade conversations. Your task is to analyze conversations between buyers and Chinese sellers and create concise, actionable summaries.
+          content: `${systemPrompt}
+
+${analysisContext}
 
 Create a comprehensive summary that includes:
 1. A brief overview of the conversation context
@@ -491,14 +530,17 @@ Keep each key point concise but informative. Focus on actionable insights and im
         },
         {
           role: "user",
-          content: `Please analyze and summarize this conversation between a buyer and Chinese seller. Focus on the key business points, negotiation status, and important details:\n\n${conversationText}`,
+          content: `Please analyze and summarize this conversation between a buyer and Chinese seller. ${analysisContext}
+
+Conversation (${messages.length} messages):
+${conversationText}`,
         },
       ],
-      max_tokens: 500,
+      max_tokens: 600,
       temperature: 0.3,
     };
 
-    console.log("Sending conversation summarization request to Groq API");
+    console.log(`Sending ${summaryType} summarization request to Groq API`);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -549,12 +591,14 @@ Keep each key point concise but informative. Focus on actionable insights and im
       };
     }
 
-    // Add timestamp and conversation count
+    // Add metadata
     const finalSummary = {
       ...parsedSummary,
       timestamp: new Date().toISOString(),
-      messageCount: last10Messages.length,
-      conversationId: Date.now().toString()
+      messageCount: messages.length,
+      conversationId: Date.now().toString(),
+      summaryType: summaryType,
+      summaryValue: summaryValue
     };
 
     // Store the summary in Chrome storage
@@ -563,7 +607,7 @@ Keep each key point concise but informative. Focus on actionable insights and im
     storageData[summaryKey] = finalSummary;
     
     chrome.storage.local.set(storageData, () => {
-      console.log("Conversation summary saved to storage");
+      console.log(`${summaryType} summary saved to storage`);
     });
 
     return finalSummary;
@@ -573,16 +617,19 @@ Keep each key point concise but informative. Focus on actionable insights and im
     
     // Return a basic summary on error
     return {
-      summary: `Error generating AI summary. Conversation included ${last10Messages.length} messages between buyer and seller.`,
+      summary: `Error generating AI summary for ${summaryType} analysis. Conversation included ${messages.length} messages between buyer and seller.`,
       keyPoints: [
         "AI summarization service unavailable",
         "Manual review recommended",
-        `${last10Messages.length} messages in conversation`
+        `${messages.length} messages analyzed`,
+        `Filter applied: ${summaryType} - ${summaryValue}`
       ],
       nextSteps: "Review conversation manually or retry summarization",
       dealStatus: "Unknown - requires manual review",
       timestamp: new Date().toISOString(),
-      messageCount: last10Messages.length,
+      messageCount: messages.length,
+      summaryType: summaryType,
+      summaryValue: summaryValue,
       error: error.message
     };
   }

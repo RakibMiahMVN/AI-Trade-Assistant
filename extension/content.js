@@ -539,21 +539,139 @@ function getConversationHistory() {
   return conversationHistory;
 }
 
-// Create and inject notes button
+// Create and inject notes button beside send button
 function injectNotesButton() {
   // Check if notes button already exists
   if (document.querySelector('.notes-btn')) return;
   
-  const chatContainer = document.querySelector('#chat-messages') || document.body;
+  // Try to find the send button using multiple selectors
+  let sendBtn = document.querySelector('.send-btn, #send-btn, [id*="send"], [class*="send"]');
   
-  // Create floating notes button
+  // If not found, search for buttons containing "发送" text
+  if (!sendBtn) {
+    const buttons = document.querySelectorAll('button');
+    for (const button of buttons) {
+      if (button.textContent.includes('发送') || button.textContent.includes('Send') || button.textContent.includes('send')) {
+        sendBtn = button;
+        break;
+      }
+    }
+  }
+  
+  if (!sendBtn) {
+    console.log("Send button not found, trying alternative approach...");
+    // Fallback: look for input container and add notes button there
+    const inputContainer = document.querySelector('.input-row, .chat-input-container, .message-input, [class*="input"]');
+    if (inputContainer) {
+      injectNotesButtonToContainer(inputContainer);
+      return;
+    }
+    
+    // Final fallback: inject as floating button
+    console.log("No suitable container found, using floating button");
+    injectFloatingNotesButton();
+    return;
+  }
+  
+  // Create notes button
   const notesBtn = document.createElement('button');
   notesBtn.className = 'notes-btn';
   notesBtn.innerHTML = '📝';
-  notesBtn.title = 'Take Notes & Summarize';
+  notesBtn.title = 'Take Notes & Summarize (Last 20 Messages)';
+  notesBtn.style.cssText = `
+    width: ${sendBtn.offsetHeight || 40}px;
+    height: ${sendBtn.offsetHeight || 40}px;
+    border-radius: 6px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+    margin-left: 8px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    flex-shrink: 0;
+  `;
+  
+  notesBtn.onmouseover = () => {
+    notesBtn.style.transform = 'scale(1.05)';
+    notesBtn.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.4)';
+    notesBtn.style.background = '#45a049';
+  };
+  
+  notesBtn.onmouseout = () => {
+    notesBtn.style.transform = 'scale(1)';
+    notesBtn.style.boxShadow = '0 2px 6px rgba(76, 175, 80, 0.3)';
+    notesBtn.style.background = '#4CAF50';
+  };
+  
+  notesBtn.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await showNotesModal();
+  };
+  
+  // Insert notes button after the send button
+  sendBtn.parentNode.insertBefore(notesBtn, sendBtn.nextSibling);
+  console.log("Notes button injected beside send button");
+}
+
+// Helper function to inject notes button into input container
+function injectNotesButtonToContainer(container) {
+  const notesBtn = document.createElement('button');
+  notesBtn.className = 'notes-btn';
+  notesBtn.innerHTML = '📝';
+  notesBtn.title = 'Take Notes & Summarize (Last 20 Messages)';
+  notesBtn.style.cssText = `
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+    margin-left: 8px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  `;
+  
+  notesBtn.onmouseover = () => {
+    notesBtn.style.transform = 'scale(1.05)';
+    notesBtn.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.4)';
+    notesBtn.style.background = '#45a049';
+  };
+  
+  notesBtn.onmouseout = () => {
+    notesBtn.style.transform = 'scale(1)';
+    notesBtn.style.boxShadow = '0 2px 6px rgba(76, 175, 80, 0.3)';
+    notesBtn.style.background = '#4CAF50';
+  };
+  
+  notesBtn.onclick = async () => {
+    await showNotesModal();
+  };
+  
+  container.appendChild(notesBtn);
+  console.log("Notes button injected into input container");
+}
+
+// Fallback function for floating notes button
+function injectFloatingNotesButton() {
+  const notesBtn = document.createElement('button');
+  notesBtn.className = 'notes-btn';
+  notesBtn.innerHTML = '📝';
+  notesBtn.title = 'Take Notes & Summarize (Last 20 Messages)';
   notesBtn.style.cssText = `
     position: fixed;
-    top: 20px;
+    bottom: 20px;
     right: 20px;
     width: 50px;
     height: 50px;
@@ -583,10 +701,10 @@ function injectNotesButton() {
   };
   
   document.body.appendChild(notesBtn);
-  console.log("Notes button injected");
+  console.log("Notes button injected as floating button");
 }
 
-// Show notes modal with summarization
+// Show notes modal with automatic summarization
 async function showNotesModal() {
   // Remove existing modal if present
   const existingModal = document.querySelector('.notes-modal');
@@ -616,7 +734,7 @@ async function showNotesModal() {
     padding: 30px;
     border-radius: 12px;
     width: 90%;
-    max-width: 600px;
+    max-width: 700px;
     max-height: 80%;
     overflow-y: auto;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -634,7 +752,7 @@ async function showNotesModal() {
   `;
   
   const title = document.createElement('h2');
-  title.textContent = '📝 Conversation Notes';
+  title.textContent = '📝 Last 20 Messages Summary';
   title.style.cssText = `
     margin: 0;
     color: #333;
@@ -656,116 +774,11 @@ async function showNotesModal() {
   header.appendChild(title);
   header.appendChild(closeBtn);
   
-  // Content area
+  // Content area with copy button
   const content = document.createElement('div');
   content.innerHTML = `
-    <div style="margin-bottom: 20px;">
-      <div style="margin-bottom: 15px;">
-        <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">🤖 AI Summarization Options</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-          <button class="summarize-option" data-type="messages" data-value="5" style="
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">📝 Last 5 Messages</button>
-          <button class="summarize-option" data-type="messages" data-value="10" style="
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">📝 Last 10 Messages</button>
-          <button class="summarize-option" data-type="messages" data-value="20" style="
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">📝 Last 20 Messages</button>
-          <button class="summarize-option" data-type="time" data-value="30" style="
-            background: #FF9800;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">⏰ Last 30 Minutes</button>
-          <button class="summarize-option" data-type="time" data-value="60" style="
-            background: #FF9800;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">⏰ Last 1 Hour</button>
-          <button class="summarize-option" data-type="time" data-value="1440" style="
-            background: #FF9800;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">⏰ Today's Messages</button>
-          <button class="summarize-option" data-type="topic" data-value="product" style="
-            background: #9C27B0;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">🏭 Product Details</button>
-          <button class="summarize-option" data-type="topic" data-value="price" style="
-            background: #9C27B0;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">💰 Price Discussion</button>
-          <button class="summarize-option" data-type="topic" data-value="shipping" style="
-            background: #9C27B0;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">🚚 Shipping & Terms</button>
-          <button class="summarize-option" data-type="all" data-value="complete" style="
-            background: #F44336;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: left;
-          ">📋 Complete Conversation</button>
-        </div>
-      </div>
-      <button id="view-saved-btn" style="
+    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+      <button id="copy-summary-btn" style="
         background: #2196F3;
         color: white;
         border: none;
@@ -773,6 +786,20 @@ async function showNotesModal() {
         border-radius: 6px;
         cursor: pointer;
         font-size: 16px;
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      ">� Copy Summary</button>
+      <button id="view-saved-btn" style="
+        background: #FF9800;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        flex: 0 0 auto;
       ">👀 View Saved Notes</button>
     </div>
     <div id="summary-content" style="
@@ -781,10 +808,23 @@ async function showNotesModal() {
       background: #f9f9f9;
       border-radius: 8px;
       border: 1px solid #ddd;
+      position: relative;
     ">
-      <p style="color: #666; text-align: center; margin: 80px 0;">
-        Select a summarization option above to generate AI notes from your conversation
-      </p>
+      <div style="text-align: center; padding: 40px;">
+        <div style="font-size: 40px; margin-bottom: 20px;">🤖</div>
+        <p>Generating AI summary of last 20 messages...</p>
+        <div style="margin-top: 20px;">
+          <div style="
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+          "></div>
+        </div>
+      </div>
     </div>
   `;
   
@@ -793,17 +833,28 @@ async function showNotesModal() {
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
   
-  // Add event listeners
-  const summarizeBtn = content.querySelector('#summarize-btn');
+  // Add CSS animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Get elements
   const viewSavedBtn = content.querySelector('#view-saved-btn');
+  const copySummaryBtn = content.querySelector('#copy-summary-btn');
   const summaryContent = content.querySelector('#summary-content');
   
-  summarizeBtn.onclick = async () => {
-    await generateSummary(summaryContent, summarizeBtn);
-  };
-  
+  // Add event listeners
   viewSavedBtn.onclick = async () => {
     await loadSavedNotes(summaryContent);
+  };
+  
+  copySummaryBtn.onclick = async () => {
+    await copySummaryToClipboard(summaryContent);
   };
   
   // Close modal on outside click
@@ -812,9 +863,268 @@ async function showNotesModal() {
       modal.remove();
     }
   };
+  
+  // Automatically generate summary with last 20 messages
+  await generateAutoSummary(summaryContent, copySummaryBtn);
 }
 
-// Generate conversation summary
+// Automatically generate summary with last 20 messages
+async function generateAutoSummary(contentDiv, copyBtn) {
+  try {
+    const filteredMessages = getFilteredMessages('messages', '20');
+    console.log(`Generating auto-summary for ${filteredMessages.length} messages:`, filteredMessages);
+    
+    // Check if extension context is available
+    if (!chrome.runtime?.id) {
+      throw new Error("Extension was reloaded. Please refresh the page to continue using AI features.");
+    }
+    
+    const response = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({
+        action: "summarize_conversation",
+        messages: filteredMessages,
+        summaryType: 'messages',
+        summaryValue: '20'
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response);
+        }
+      });
+    });
+    
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    
+    displaySummary(contentDiv, response.summary, 'messages', '20');
+    
+    // Enable copy button
+    copyBtn.disabled = false;
+    copyBtn.style.opacity = '1';
+    
+  } catch (error) {
+    console.error('Auto-summarization error:', error);
+    contentDiv.innerHTML = `
+      <div style="color: #f44336; text-align: center; padding: 20px;">
+        <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+        <h3>Summarization Failed</h3>
+        <p>Error: ${error.message}</p>
+        <p style="color: #666; margin-top: 15px;">
+          Make sure your Groq API key is configured in the extension settings.
+        </p>
+        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; color: #856404;">
+          <strong>Filter Applied:</strong> Last 20 Messages
+        </div>
+        <button onclick="location.reload()" style="
+          background: #4CAF50;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          margin-top: 15px;
+        ">🔄 Refresh Page</button>
+      </div>
+    `;
+    
+    // Disable copy button on error
+    copyBtn.disabled = true;
+    copyBtn.style.opacity = '0.5';
+  }
+}
+
+// Copy summary to clipboard
+async function copySummaryToClipboard(summaryContent) {
+  try {
+    const summaryText = summaryContent.innerText || summaryContent.textContent;
+    
+    if (!summaryText || summaryText.includes('Generating AI summary') || summaryText.includes('Summarization Failed')) {
+      alert('No summary available to copy. Please wait for the summary to generate successfully.');
+      return;
+    }
+    
+    await navigator.clipboard.writeText(summaryText);
+    
+    // Show success feedback
+    const originalBtn = document.querySelector('#copy-summary-btn');
+    if (originalBtn) {
+      const originalText = originalBtn.textContent;
+      originalBtn.textContent = '✅ Copied!';
+      originalBtn.style.background = '#4CAF50';
+      
+      setTimeout(() => {
+        originalBtn.textContent = originalText;
+        originalBtn.style.background = '#2196F3';
+      }, 2000);
+    }
+    
+  } catch (error) {
+    console.error('Copy to clipboard failed:', error);
+    
+    // Fallback: create a temporary textarea for older browsers
+    try {
+      const summaryText = summaryContent.innerText || summaryContent.textContent;
+      const textarea = document.createElement('textarea');
+      textarea.value = summaryText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      
+      alert('Summary copied to clipboard!');
+    } catch (fallbackError) {
+      console.error('Fallback copy failed:', fallbackError);
+      alert('Failed to copy to clipboard. Please select and copy the text manually.');
+    }
+  }
+}
+
+// Generate conversation summary with dynamic options
+async function generateDynamicSummary(contentDiv, button, type, value) {
+  const originalText = button.textContent;
+  const originalBg = button.style.background;
+  button.textContent = '🔄 Processing...';
+  button.style.background = '#666';
+  button.disabled = true;
+  
+  contentDiv.innerHTML = `
+    <div style="text-align: center; padding: 40px;">
+      <div style="font-size: 40px; margin-bottom: 20px;">🤖</div>
+      <p>Analyzing conversation with AI...</p>
+      <p style="color: #666; font-size: 14px;">Type: ${type}, Filter: ${value}</p>
+      <div style="margin-top: 20px;">
+        <div style="
+          width: 40px;
+          height: 40px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #4CAF50;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto;
+        "></div>
+      </div>
+    </div>
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  `;
+  
+  try {
+    const filteredMessages = getFilteredMessages(type, value);
+    console.log(`Sending ${filteredMessages.length} messages for ${type} summarization:`, filteredMessages);
+    
+    const response = await chrome.runtime.sendMessage({
+      action: "summarize_conversation",
+      messages: filteredMessages,
+      summaryType: type,
+      summaryValue: value
+    });
+    
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    
+    displaySummary(contentDiv, response.summary, type, value);
+    
+  } catch (error) {
+    console.error('Summarization error:', error);
+    contentDiv.innerHTML = `
+      <div style="color: #f44336; text-align: center; padding: 20px;">
+        <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+        <h3>Summarization Failed</h3>
+        <p>Error: ${error.message}</p>
+        <p style="color: #666; margin-top: 15px;">
+          Make sure your Groq API key is configured in the extension settings.
+        </p>
+        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; color: #856404;">
+          <strong>Filter Applied:</strong> ${type} - ${value}
+        </div>
+      </div>
+    `;
+  } finally {
+    button.textContent = originalText;
+    button.style.background = originalBg;
+    button.disabled = false;
+  }
+}
+
+// Get filtered messages based on type and value
+function getFilteredMessages(type, value) {
+  const allMessages = getConversationHistory();
+  
+  switch (type) {
+    case 'messages':
+      // Filter by number of messages
+      const messageCount = parseInt(value);
+      return allMessages.slice(-messageCount);
+      
+    case 'time':
+      // Filter by time (in minutes)
+      const minutesAgo = parseInt(value);
+      const cutoffTime = new Date(Date.now() - minutesAgo * 60 * 1000);
+      return allMessages.filter(msg => new Date(msg.timestamp) >= cutoffTime);
+      
+    case 'topic':
+      // Filter by topic/keyword
+      return filterMessagesByTopic(allMessages, value);
+      
+    case 'all':
+      // Return all messages
+      return allMessages;
+      
+    default:
+      // Default to last 10 messages
+      return allMessages.slice(-10);
+  }
+}
+
+// Filter messages by topic/keywords
+function filterMessagesByTopic(messages, topic) {
+  const topicKeywords = {
+    'product': [
+      // English keywords
+      'product', 'specification', 'quality', 'material', 'size', 'color', 'model', 'feature', 'design',
+      'dimension', 'weight', 'capacity', 'performance', 'function', 'style', 'brand', 'version',
+      // Chinese keywords
+      '产品', '规格', '质量', '材料', '尺寸', '颜色', '型号', '功能', '设计',
+      '尺寸', '重量', '容量', '性能', '款式', '品牌', '版本', '材质'
+    ],
+    'price': [
+      // English keywords
+      'price', 'cost', 'fee', 'charge', 'rate', 'discount', 'offer', 'quote', 'budget', 'cheap',
+      'expensive', 'affordable', 'negotiate', 'deal', 'payment', 'money', 'dollar', 'yuan',
+      // Chinese keywords
+      '价格', '费用', '收费', '报价', '优惠', '折扣', '便宜', '贵', '谈价', '付款',
+      '钱', '元', '美元', '成本', '预算', '划算'
+    ],
+    'shipping': [
+      // English keywords
+      'shipping', 'delivery', 'transport', 'logistics', 'freight', 'courier', 'express', 'ship',
+      'send', 'dispatch', 'lead time', 'arrival', 'port', 'customs', 'duty', 'tax',
+      // Chinese keywords
+      '运输', '发货', '快递', '物流', '运费', '邮寄', '发送', '到达',
+      '港口', '海关', '关税', '交货', '运输时间'
+    ]
+  };
+  
+  const keywords = topicKeywords[topic] || [];
+  
+  if (keywords.length === 0) {
+    return messages; // Return all messages if no keywords found
+  }
+  
+  return messages.filter(msg => {
+    const text = msg.text.toLowerCase();
+    return keywords.some(keyword => text.includes(keyword.toLowerCase()));
+  });
+}
+
+// Generate conversation summary (keeping original for compatibility)
 async function generateSummary(contentDiv, button) {
   const originalText = button.textContent;
   button.textContent = '🔄 Generating...';
@@ -878,14 +1188,51 @@ async function generateSummary(contentDiv, button) {
 }
 
 // Display the generated summary
-function displaySummary(contentDiv, summary) {
+function displaySummary(contentDiv, summary, type = 'messages', value = '10') {
   const date = new Date(summary.timestamp).toLocaleString();
+  
+  // Create filter description
+  let filterDescription = '';
+  switch (type) {
+    case 'messages':
+      filterDescription = `📝 Last ${value} Messages`;
+      break;
+    case 'time':
+      const timeLabel = value == 30 ? '30 Minutes' : value == 60 ? '1 Hour' : value == 1440 ? 'Today' : `${value} Minutes`;
+      filterDescription = `⏰ ${timeLabel}`;
+      break;
+    case 'topic':
+      const topicLabel = value == 'product' ? '🏭 Product Details' : value == 'price' ? '💰 Price Discussion' : value == 'shipping' ? '🚚 Shipping & Terms' : `📂 ${value}`;
+      filterDescription = topicLabel;
+      break;
+    case 'all':
+      filterDescription = '📋 Complete Conversation';
+      break;
+    default:
+      filterDescription = `📝 ${type} - ${value}`;
+  }
   
   contentDiv.innerHTML = `
     <div style="margin-bottom: 20px;">
       <h3 style="color: #4CAF50; margin: 0 0 10px 0;">📊 Conversation Summary</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <p style="color: #666; font-size: 14px; margin: 0;">
+          Generated: ${date}
+        </p>
+        <div style="
+          background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          color: #1976d2;
+          font-weight: 500;
+          border: 1px solid #e1bee7;
+        ">
+          ${filterDescription}
+        </div>
+      </div>
       <p style="color: #666; font-size: 14px; margin: 0;">
-        Generated: ${date} | Messages: ${summary.messageCount || 'N/A'}
+        Messages Analyzed: ${summary.messageCount || 'N/A'}
       </p>
     </div>
     
@@ -922,6 +1269,22 @@ function displaySummary(contentDiv, summary) {
         </p>
       </div>
     ` : ''}
+    
+    ${type === 'topic' ? `
+      <div style="
+        margin-top: 20px;
+        padding: 12px;
+        background: linear-gradient(135deg, #fff3e0, #fce4ec);
+        border-radius: 8px;
+        border-left: 4px solid #ff9800;
+      ">
+        <h4 style="color: #e65100; margin: 0 0 8px 0;">🎯 Topic-Focused Analysis</h4>
+        <p style="color: #bf360c; font-size: 14px; margin: 0; line-height: 1.4;">
+          This summary focuses specifically on <strong>${value}</strong> related discussions. 
+          For a complete conversation overview, try "Complete Conversation" option.
+        </p>
+      </div>
+    ` : ''}
   `;
 }
 
@@ -954,6 +1317,50 @@ async function loadSavedNotes(contentDiv) {
       
       const notesHtml = summaries.map(summary => {
         const date = new Date(summary.timestamp).toLocaleString();
+        
+        // Create filter badge
+        let filterBadge = '';
+        if (summary.summaryType && summary.summaryValue) {
+          const type = summary.summaryType;
+          const value = summary.summaryValue;
+          let filterText = '';
+          let badgeColor = '#2196F3';
+          
+          switch (type) {
+            case 'messages':
+              filterText = `📝 ${value} msgs`;
+              badgeColor = '#4CAF50';
+              break;
+            case 'time':
+              const timeLabel = value == 30 ? '30min' : value == 60 ? '1hr' : value == 1440 ? 'today' : `${value}min`;
+              filterText = `⏰ ${timeLabel}`;
+              badgeColor = '#FF9800';
+              break;
+            case 'topic':
+              const topicLabel = value == 'product' ? '🏭 product' : value == 'price' ? '💰 price' : value == 'shipping' ? '🚚 shipping' : value;
+              filterText = topicLabel;
+              badgeColor = '#9C27B0';
+              break;
+            case 'all':
+              filterText = '📋 complete';
+              badgeColor = '#F44336';
+              break;
+            default:
+              filterText = `${type}-${value}`;
+          }
+          
+          filterBadge = `
+            <span style="
+              background: ${badgeColor};
+              color: white;
+              font-size: 10px;
+              padding: 2px 6px;
+              border-radius: 10px;
+              margin-left: 8px;
+            ">${filterText}</span>
+          `;
+        }
+        
         return `
           <div style="
             border: 1px solid #ddd; 
@@ -968,7 +1375,10 @@ async function loadSavedNotes(contentDiv) {
               align-items: center;
               margin-bottom: 10px;
             ">
-              <h4 style="margin: 0; color: #333;">📊 ${date}</h4>
+              <div style="display: flex; align-items: center;">
+                <h4 style="margin: 0; color: #333;">📊 ${date}</h4>
+                ${filterBadge}
+              </div>
               <button onclick="this.parentElement.parentElement.remove()" style="
                 background: #f44336;
                 color: white;
@@ -1039,6 +1449,14 @@ function init() {
   
   // Inject notes button
   injectNotesButton();
+  
+  // Set up periodic check for notes button (useful for SPAs and dynamic content)
+  setInterval(() => {
+    if (!document.querySelector('.notes-btn')) {
+      console.log("Notes button not found, re-injecting...");
+      injectNotesButton();
+    }
+  }, 3000); // Check every 3 seconds
 }
 
 // Wait for page to load
