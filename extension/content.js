@@ -74,7 +74,7 @@ function scanForSellerMessages() {
 }
 
 // Detect buyer messages and add translation overlays
-function scanForBuyerMessages() {
+function getBuyerMessages() {
   const buyerMessages = document.querySelectorAll(".user-msg:not(.translated)");
   console.log("Scanning for buyer messages, found:", buyerMessages.length);
 
@@ -1398,8 +1398,7 @@ function setupMessageObserver() {
     if (hasNewMessages) {
       setTimeout(() => {
         scanForSellerMessages();
-        scanForBuyerMessages();
-        addIntentionButtons(); // Ensure intention buttons are added to new messages
+        getBuyerMessages();
       }, 500);
     }
   });
@@ -1688,7 +1687,7 @@ function init() {
   // Initial scan
   setTimeout(() => {
     scanForSellerMessages();
-    scanForBuyerMessages();
+    getBuyerMessages();
   }, 1000);
 
   // Setup input field
