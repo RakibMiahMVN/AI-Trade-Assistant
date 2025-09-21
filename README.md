@@ -7,14 +7,14 @@ A po### Seller Intention Analysis
 - **Bilingual Display**: Shows both English (blue) and Bengali (red) versions when Bengali is selected for clarity
 - **Negotiation Insights**: Understand seller's firmness on price, MOQ flexibility, and communication tone
 - **Strategic Intelligence**: Get key insights about the seller's position and negotiation approach
-- **Real-time Analysis**: AI-powered analysis of the last 3 seller messages browser extension that revolutionizes international trade### 🔍 Seller Intention Analysis
+- **Real-time Analysis**: AI-powered analysis of the last 3 seller messages browser extension that revolutionizes international trade### � Message Bookmarking
 
-- **Analyze Intentions**: Click the "?" button beside recent seller messages
-- **Token-Efficient Analysis**: AI generates analysis in English, then translates to your language for display
-- **Bilingual Display**: Shows both English and Bengali versions when Bengali is selected for better understanding
-- **Understand Hidden Meaning**: Get AI analysis of the seller's tone, price firmness, and MOQ flexibility
-- **Strategic Insights**: Receive key points about the seller's negotiation position
-- **Available on Last 3 Messages**: The "?" button appears on the most recent seller messagesnication by providing real-time translation and AI-powered response suggestions for buyers communicating with Chinese sellers on platforms like 1688.com.
+- **Save Frequently Used Messages**: Click the 🔖 button beside your sent messages to bookmark them
+- **Quick Access**: Focus on the input field to see your bookmarked messages
+- **Easy Insertion**: Click any bookmark to insert it into the input field
+- **Delete Bookmarks**: Remove unwanted bookmarks with the delete button
+- **Local Storage**: Bookmarks are stored locally (up to 10 messages)
+- **Success Notifications**: Get feedback when messages are bookmarked or deletednication by providing real-time translation and AI-powered response suggestions for buyers communicating with Chinese sellers on platforms like 1688.com.
 
 ## 🌟 Features
 
@@ -38,6 +38,15 @@ A po### Seller Intention Analysis
 - **Negotiation Insights**: Understand seller's firmness on price, MOQ flexibility, and communication tone
 - **Strategic Intelligence**: Get key insights about the seller's position and negotiation approach
 - **Real-time Analysis**: AI-powered analysis of the last 3 seller messages
+
+### 🔖 Message Bookmarking
+
+- **Save Frequently Used Messages**: Click the 🔖 button beside your sent messages to bookmark them
+- **Quick Access**: Focus on the input field to see your bookmarked messages
+- **Easy Insertion**: Click any bookmark to insert it into the input field
+- **Delete Bookmarks**: Remove unwanted bookmarks with the delete button
+- **Local Storage**: Bookmarks are stored locally (up to 10 messages)
+- **Success Notifications**: Get feedback when messages are bookmarked or deleted
 
 ### 🎯 Smart Negotiation Tools
 

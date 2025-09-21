@@ -1,6 +1,33 @@
 // Content script for AI Trade Assistant
 console.log("AI Trade Assistant content script loaded");
 
+// Add CSS animations for notifications
+const style = document.createElement("style");
+style.textContent = `
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOutRight {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+`;
+document.head.appendChild(style);
+
 // Detect seller messages and add translation overlays
 function scanForSellerMessages() {
   const sellerMessages = document.querySelectorAll(
@@ -85,6 +112,9 @@ function scanForBuyerMessages() {
       }
     }
   });
+
+  // Add bookmark buttons to buyer messages
+  addBookmarkButtons();
 }
 
 // Add translation overlay to message
@@ -159,6 +189,67 @@ function addTranslationOverlay(
   messageElement.appendChild(overlay);
 }
 
+// Add bookmark buttons to buyer messages
+function addBookmarkButtons() {
+  const buyerMessages = document.querySelectorAll(".user-msg");
+
+  buyerMessages.forEach((msgElement) => {
+    // Check if button already exists
+    if (msgElement.parentNode.querySelector(".bookmark-btn")) return;
+
+    // Create bookmark button
+    const bookmarkBtn = document.createElement("button");
+    bookmarkBtn.className = "bookmark-btn";
+    bookmarkBtn.textContent = "🔖";
+    bookmarkBtn.title = "Bookmark this message";
+    bookmarkBtn.style.cssText = `
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #4caf50;
+      color: white;
+      border: 2px solid white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      z-index: 10;
+    `;
+
+    bookmarkBtn.onmouseover = () => {
+      bookmarkBtn.style.background = "#388e3c";
+      bookmarkBtn.style.transform = "scale(1.1)";
+    };
+
+    bookmarkBtn.onmouseout = () => {
+      bookmarkBtn.style.background = "#4caf50";
+      bookmarkBtn.style.transform = "scale(1)";
+    };
+
+    bookmarkBtn.onclick = () => {
+      bookmarkMessage(msgElement);
+    };
+
+    // Make message content position relative for absolute positioning
+    const messageContent = msgElement.parentNode;
+    if (
+      messageContent &&
+      getComputedStyle(messageContent).position === "static"
+    ) {
+      messageContent.style.position = "relative";
+    }
+
+    // Insert button into the message content
+    messageContent.appendChild(bookmarkBtn);
+  });
+}
+
 // Add intention analysis buttons to the last 3 seller messages
 function addIntentionButtons() {
   const allSellerMessages = document.querySelectorAll(".seller-msg");
@@ -225,53 +316,302 @@ function addIntentionButtons() {
   });
 }
 
-// Analyze seller message intention
-function analyzeSellerIntention(messageElement) {
-  const chineseText = messageElement.textContent.trim();
-  if (!chineseText) return;
+// Bookmark a buyer message
+async function bookmarkMessage(messageElement) {
+  // Extract only the original text, excluding translation overlays
+  const originalText = Array.from(messageElement.childNodes)
+    .filter(node => node.nodeType === Node.TEXT_NODE)
+    .map(node => node.textContent.trim())
+    .join('')
+    .trim();
 
-  // Show loading state
-  const btn = messageElement.parentNode.querySelector(".intention-btn");
-  if (btn) {
-    btn.textContent = "...";
-    btn.disabled = true;
+  if (!originalText) return;
+
+  // Get existing bookmarks
+  const bookmarks = getBookmarks();
+
+  // Check if already bookmarked (compare original text)
+  if (bookmarks.some((bookmark) => bookmark.originalText === originalText)) {
+    showBookmarkNotification("Already bookmarked!", "#ff9800");
+    return;
   }
 
-  try {
-    chrome.runtime.sendMessage(
-      {
-        action: "analyze_intention",
-        text: chineseText,
-      },
-      (response) => {
-        if (response && response.analysis) {
-          showIntentionAnalysis(response.analysis, messageElement);
-        } else {
-          console.error("Failed to analyze intention");
-          showIntentionAnalysis(
-            {
-              tone: "Error",
-              firmness: "Unable to analyze",
-              key_points: ["Analysis failed"],
-            },
-            messageElement
-          );
-        }
+  // Check limit (max 10 bookmarks)
+  if (bookmarks.length >= 10) {
+    showBookmarkNotification("Maximum 10 bookmarks allowed!", "#f44336");
+    return;
+  }
 
-        // Reset button
-        if (btn) {
-          btn.textContent = "?";
-          btn.disabled = false;
-        }
-      }
-    );
+  // Get buyer's language for translation
+  let buyerLanguage = "en";
+  try {
+    const result = await chrome.storage.sync.get(["buyerLanguage"]);
+    buyerLanguage = result.buyerLanguage || "en";
   } catch (error) {
-    console.error("Extension context error:", error);
-    if (btn) {
-      btn.textContent = "?";
-      btn.disabled = false;
+    console.error("Failed to get buyer language:", error);
+  }
+
+  // The originalText is the original Chinese text (as displayed on the site)
+  // We need to translate it to the buyer's language for display in bookmarks
+  let translatedText = originalText; // fallback to original if translation fails
+
+  if (buyerLanguage !== "zh") {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: "translate",
+        text: originalText,
+        from: "zh",
+        to: buyerLanguage,
+      });
+      if (response.translation) {
+        translatedText = response.translation;
+      }
+    } catch (error) {
+      console.error("Translation error for bookmark:", error);
     }
   }
+
+  // Add new bookmark with both original and translated text
+  const newBookmark = {
+    id: Date.now().toString(),
+    originalText: originalText, // Chinese text (what gets sent)
+    translatedText: translatedText, // Translated text (for display)
+    buyerLanguage: buyerLanguage,
+    created: new Date().toISOString(),
+  };
+
+  bookmarks.push(newBookmark);
+  saveBookmarks(bookmarks);
+
+  // Show success message
+  showBookmarkNotification("Message bookmarked! 📖", "#4caf50");
+
+  // Update bookmark button appearance
+  const btn = messageElement.parentNode.querySelector(".bookmark-btn");
+  if (btn) {
+    btn.style.background = "#388e3c";
+    btn.textContent = "✓";
+    setTimeout(() => {
+      if (btn) {
+        btn.style.background = "#4caf50";
+        btn.textContent = "🔖";
+      }
+    }, 2000);
+  }
+}
+
+// Show bookmark notification
+function showBookmarkNotification(message, color) {
+  // Remove existing notification
+  const existingNotification = document.querySelector(".bookmark-notification");
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+
+  // Create notification
+  const notification = document.createElement("div");
+  notification.className = "bookmark-notification";
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${color};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10002;
+    animation: slideInRight 0.3s ease-out;
+  `;
+
+  document.body.appendChild(notification);
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.style.animation = "slideOutRight 0.3s ease-in";
+      setTimeout(() => {
+        notification.remove();
+      }, 300);
+    }
+  }, 3000);
+}
+
+// Get bookmarks from localStorage
+function getBookmarks() {
+  try {
+    const bookmarks = localStorage.getItem("aiTradeAssistantBookmarks");
+    return bookmarks ? JSON.parse(bookmarks) : [];
+  } catch (error) {
+    console.error("Error getting bookmarks:", error);
+    return [];
+  }
+}
+
+// Save bookmarks to localStorage
+function saveBookmarks(bookmarks) {
+  try {
+    localStorage.setItem(
+      "aiTradeAssistantBookmarks",
+      JSON.stringify(bookmarks)
+    );
+  } catch (error) {
+    console.error("Error saving bookmarks:", error);
+  }
+}
+
+// Show bookmark suggestions when input field is focused
+function showBookmarkSuggestions(inputField) {
+  const bookmarks = getBookmarks();
+  if (bookmarks.length === 0) return;
+
+  // Remove existing bookmark suggestions
+  hideBookmarkSuggestions();
+
+  // Create suggestions container
+  const container = document.createElement("div");
+  container.id = "bookmark-suggestions-container";
+  container.style.cssText = `
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-bottom: 5px;
+  `;
+
+  // Add header
+  const header = document.createElement("div");
+  header.textContent = "📖 Bookmarked Messages";
+  header.style.cssText = `
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    font-weight: 500;
+    font-size: 12px;
+    color: #666;
+  `;
+  container.appendChild(header);
+
+  // Add bookmark items
+  bookmarks.forEach((bookmark) => {
+    const item = document.createElement("div");
+    item.className = "bookmark-suggestion-item";
+    item.style.cssText = `
+      padding: 10px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    `;
+
+    item.onmouseover = () => {
+      item.style.backgroundColor = "#f8f9fa";
+    };
+
+    item.onmouseout = () => {
+      item.style.backgroundColor = "transparent";
+    };
+
+    item.onclick = () => {
+      // Insert the original Chinese text (what actually gets sent)
+      inputField.value = bookmark.originalText;
+      inputField.dispatchEvent(new Event("input", { bubbles: true }));
+      hideBookmarkSuggestions();
+      inputField.focus();
+    };
+
+    // Bookmark text (show translated text for user recognition, truncated if too long)
+    const textSpan = document.createElement("span");
+    const displayText = bookmark.translatedText || bookmark.originalText;
+    textSpan.textContent =
+      displayText.length > 50
+        ? displayText.substring(0, 50) + "..."
+        : displayText;
+    textSpan.style.cssText = `
+      flex: 1;
+      font-size: 13px;
+      color: #333;
+    `;
+
+    // Language indicator if different from current
+    if (bookmark.buyerLanguage && bookmark.buyerLanguage !== "en") {
+      const langIndicator = document.createElement("span");
+      langIndicator.textContent = ` (${bookmark.buyerLanguage.toUpperCase()})`;
+      langIndicator.style.cssText = `
+        font-size: 11px;
+        color: #666;
+        font-weight: normal;
+      `;
+      textSpan.appendChild(langIndicator);
+    }
+
+    // Delete button
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "🗑️";
+    deleteBtn.title = "Delete bookmark";
+    deleteBtn.style.cssText = `
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px;
+      opacity: 0.6;
+    `;
+
+    deleteBtn.onmouseover = () => {
+      deleteBtn.style.opacity = "1";
+    };
+
+    deleteBtn.onmouseout = () => {
+      deleteBtn.style.opacity = "0.6";
+    };
+
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteBookmark(bookmark.id);
+      showBookmarkSuggestions(inputField); // Refresh the list
+    };
+
+    item.appendChild(textSpan);
+    item.appendChild(deleteBtn);
+    container.appendChild(item);
+  });
+
+  // Insert container into the input field's parent
+  const inputWrapper = inputField.parentNode;
+  if (inputWrapper) {
+    inputWrapper.style.position = "relative";
+    inputWrapper.appendChild(container);
+  }
+}
+
+// Hide bookmark suggestions
+function hideBookmarkSuggestions() {
+  const container = document.getElementById("bookmark-suggestions-container");
+  if (container) {
+    container.remove();
+  }
+}
+
+// Delete a bookmark
+function deleteBookmark(bookmarkId) {
+  const bookmarks = getBookmarks();
+  const updatedBookmarks = bookmarks.filter(
+    (bookmark) => bookmark.id !== bookmarkId
+  );
+  saveBookmarks(updatedBookmarks);
+  showBookmarkNotification("Bookmark deleted!", "#ff9800");
 }
 
 // Show intention analysis in a popup
@@ -528,6 +868,54 @@ async function showIntentionAnalysis(analysis, messageElement) {
   });
 }
 
+// Analyze seller intention using AI
+async function analyzeSellerIntention(messageElement) {
+  // Extract only the original text, excluding translation overlays
+  const messageText = Array.from(messageElement.childNodes)
+    .filter(node => node.nodeType === Node.TEXT_NODE)
+    .map(node => node.textContent.trim())
+    .join('')
+    .trim();
+
+  if (!messageText) return;
+
+  try {
+    // Send to background script for AI analysis
+    const response = await chrome.runtime.sendMessage({
+      action: "analyze_intention",
+      text: messageText,
+    });
+
+    if (response && response.analysis) {
+      showIntentionAnalysis(response.analysis, messageElement);
+    } else {
+      console.error("Failed to analyze seller intention");
+      // Show error message
+      showIntentionAnalysis(
+        {
+          tone: "Unable to analyze",
+          firmness: "Unable to analyze",
+          moq_flexibility: "Unable to analyze",
+          key_points: ["Analysis failed - please try again"],
+        },
+        messageElement
+      );
+    }
+  } catch (error) {
+    console.error("Error analyzing seller intention:", error);
+    // Show error message
+    showIntentionAnalysis(
+      {
+        tone: "Error occurred",
+        firmness: "Error occurred",
+        moq_flexibility: "Error occurred",
+        key_points: ["An error occurred while analyzing the message"],
+      },
+      messageElement
+    );
+  }
+}
+
 // Detect input field and add suggestion functionality
 function setupInputField() {
   const chatInput = document.getElementById("chat-input");
@@ -535,6 +923,18 @@ function setupInputField() {
 
   // Add translate and suggestion buttons next to input
   injectTranslateButton(chatInput);
+
+  // Show bookmarks when input field is focused
+  chatInput.addEventListener("focus", () => {
+    showBookmarkSuggestions(chatInput);
+  });
+
+  // Hide bookmarks when input loses focus (with delay to allow clicking)
+  chatInput.addEventListener("blur", () => {
+    setTimeout(() => {
+      hideBookmarkSuggestions();
+    }, 200);
+  });
 
   // Remove the old auto-suggestion input listener
   // Suggestions are now triggered manually via the suggestion button
@@ -647,15 +1047,35 @@ function injectTranslateButton(inputField) {
     display: flex;
   `;
 
+  // Create suggestions container for AI suggestions
+  const suggestionsContainer = document.createElement("div");
+  suggestionsContainer.id = "suggestions-container";
+  suggestionsContainer.style.cssText = `
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-bottom: 5px;
+    display: none;
+  `;
+
   // Replace input field with wrapper, then put input field inside wrapper
   inputField.parentNode.insertBefore(inputWrapper, inputField);
   inputWrapper.appendChild(inputField);
   inputField.style.flex = "1";
   inputField.style.paddingRight = "90px";
 
-  // Insert buttons into the wrapper
+  // Insert buttons and suggestions container into the wrapper
   inputWrapper.appendChild(suggestBtn);
   inputWrapper.appendChild(translateBtn);
+  inputWrapper.appendChild(suggestionsContainer);
 }
 
 // Show intention modal to ask buyer what they want to achieve
@@ -793,7 +1213,7 @@ function setupMessageObserver() {
 function generateAISuggestion(inputField, intention) {
   // Collect last 2 messages from conversation
   const messages = [];
-  const messageElements = document.querySelectorAll(".message");
+  const messageElements = document.querySelectorAll(".seller-msg, .user-msg");
 
   // Get the last 2 messages (most recent first)
   for (
@@ -808,11 +1228,24 @@ function generateAISuggestion(inputField, intention) {
         (node) => node.nodeType === Node.TEXT_NODE
       );
       if (textNode) {
-        const type = el.classList.contains("seller-message")
-          ? "seller"
-          : "buyer";
+        const type = el.classList.contains("seller-msg") ? "seller" : "buyer";
         messages.unshift({
           text: textNode.textContent.trim(),
+          type: type,
+        });
+      }
+    } else {
+      // If no message-content div, extract only text nodes excluding overlays
+      const originalText = Array.from(el.childNodes)
+        .filter(node => node.nodeType === Node.TEXT_NODE)
+        .map(node => node.textContent.trim())
+        .join('')
+        .trim();
+
+      if (originalText) {
+        const type = el.classList.contains("seller-msg") ? "seller" : "buyer";
+        messages.unshift({
+          text: originalText,
           type: type,
         });
       }
