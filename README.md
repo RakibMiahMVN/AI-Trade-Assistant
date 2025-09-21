@@ -18,6 +18,13 @@ A powerful browser extension that revolutionizes international trade communicati
 - **Bilingual Output**: Provides suggestions in both Chinese (for sending) and Bengali (for understanding)
 - **Multiple AI Models**: Supports various Groq AI models for different quality/speed preferences
 
+### 🔍 Seller Intention Analysis
+
+- **Hidden Meaning Detection**: Click "?" button beside seller messages to analyze their true intentions
+- **Negotiation Insights**: Understand seller's firmness on price, MOQ flexibility, and communication tone
+- **Strategic Intelligence**: Get key insights about the seller's position and negotiation approach
+- **Real-time Analysis**: AI-powered analysis of the last 3 seller messages
+
 ### 🎯 Smart Negotiation Tools
 
 - **Price Negotiation**: Get suggestions for asking discounts or better pricing
@@ -77,6 +84,13 @@ A powerful browser extension that revolutionizes international trade communicati
 - **Seller Messages**: Automatically appear with Bengali translations
 - **Your Messages**: Click the 中 button to translate English to Chinese before sending
 - **Toggle Translations**: Click any translation overlay to hide/show it
+
+### Seller Intention Analysis
+
+- **Analyze Intentions**: Click the "?" button beside recent seller messages
+- **Understand Hidden Meaning**: Get AI analysis of the seller's tone, price firmness, and MOQ flexibility
+- **Strategic Insights**: Receive key points about the seller's negotiation position
+- **Available on Last 3 Messages**: The "?" button appears on the most recent seller messages
 
 ### AI Suggestion Workflow
 
