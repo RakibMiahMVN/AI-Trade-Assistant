@@ -182,9 +182,23 @@ function addTranslationOverlay(
     `;
   }
 
-  overlay.onclick = () => {
-    overlay.style.display = overlay.style.display === "none" ? "block" : "none";
+  // Add click handler to the original message to toggle translation
+  messageElement.style.cursor = "pointer";
+  messageElement.onclick = (e) => {
+    // Only toggle if clicking on the text content, not on buttons or other elements
+    if (
+      e.target === messageElement ||
+      e.target.nodeType === Node.TEXT_NODE ||
+      e.target.parentNode === messageElement
+    ) {
+      e.stopPropagation();
+      overlay.style.display =
+        overlay.style.display === "none" ? "block" : "none";
+    }
   };
+
+  // Don't make overlay clickable
+  // overlay.onclick = ...
 
   messageElement.appendChild(overlay);
 }
