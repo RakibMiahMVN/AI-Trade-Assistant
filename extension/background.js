@@ -357,21 +357,28 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
     const bilingualSuggestions = [];
     for (const chinese of chineseSuggestions) {
       try {
-        // Translate to buyer's language
-        const buyerTranslation = await translateText(
-          chinese,
-          "zh",
-          buyerLanguage
-        );
-        bilingualSuggestions.push({
+        // Always translate to English first
+        const englishTranslation = await translateText(chinese, "zh", "en");
+
+        // Then translate to buyer's language if different from English
+        let buyerTranslation = englishTranslation;
+        if (buyerLanguage !== "en") {
+          buyerTranslation = await translateText(chinese, "zh", buyerLanguage);
+        }
+
+        const suggestion = {
           chinese: chinese,
-          [buyerLanguage]: buyerTranslation || chinese,
-        });
+          english: englishTranslation,
+          [buyerLanguage]: buyerTranslation,
+        };
+
+        bilingualSuggestions.push(suggestion);
       } catch (error) {
         console.error("Translation error:", error);
         bilingualSuggestions.push({
           chinese: chinese,
-          [buyerLanguage]: chinese, // Fallback to Chinese if translation fails
+          english: chinese, // Fallback to Chinese
+          [buyerLanguage]: chinese, // Fallback to Chinese
         });
       }
     }
@@ -381,6 +388,7 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
       const fallbacks = [
         {
           chinese: "您好，我想了解更多关于这个产品的信息。",
+          english: "Hello, I want to know more about this product.",
           [buyerLanguage]:
             buyerLanguage === "bn"
               ? "হ্যালো, আমি এই পণ্য সম্পর্কে আরও তথ্য জানতে চাই।"
@@ -388,6 +396,7 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
         },
         {
           chinese: "我们可以讨论一下价格吗？",
+          english: "Can we discuss the price?",
           [buyerLanguage]:
             buyerLanguage === "bn"
               ? "আমরা দাম নিয়ে আলোচনা করতে পারি?"
@@ -415,10 +424,12 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
       return [
         {
           chinese: "请求超时，请稍后重试",
+          english: "Request timed out, please try again later",
           [buyerLanguage]: timeoutMsg1,
         },
         {
           chinese: "网络连接问题，请检查您的连接",
+          english: "Network connection issue, please check your connection",
           [buyerLanguage]: timeoutMsg2,
         },
       ];
@@ -437,10 +448,12 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
       return [
         {
           chinese: "API 配置错误，请检查您的密钥",
+          english: "API configuration error, please check your key",
           [buyerLanguage]: apiErrorMsg1,
         },
         {
           chinese: "请在扩展设置中更新 API 密钥",
+          english: "Please update API key in extension settings",
           [buyerLanguage]: apiErrorMsg2,
         },
       ];
@@ -458,10 +471,12 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
     return [
       {
         chinese: "您好，我想了解更多关于这个产品的信息。",
+        english: "Hello, I want to know more about this product.",
         [buyerLanguage]: fallbackMsg1,
       },
       {
         chinese: "我们可以讨论一下价格吗？",
+        english: "Can we discuss the price?",
         [buyerLanguage]: fallbackMsg2,
       },
     ];

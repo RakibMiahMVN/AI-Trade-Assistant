@@ -435,14 +435,70 @@ function showBookmarkNotification(message, color) {
   }, 3000);
 }
 
-// Get bookmarks from localStorage
-function getBookmarks() {
+// Get custom goals from localStorage
+function getCustomGoals() {
   try {
-    const bookmarks = localStorage.getItem("aiTradeAssistantBookmarks");
-    return bookmarks ? JSON.parse(bookmarks) : [];
+    const goals = localStorage.getItem("aiTradeAssistantCustomGoals");
+    return goals ? JSON.parse(goals) : [];
   } catch (error) {
-    console.error("Error getting bookmarks:", error);
+    console.error("Error getting custom goals:", error);
     return [];
+  }
+}
+
+// Save custom goals to localStorage
+function saveCustomGoals(goals) {
+  try {
+    localStorage.setItem("aiTradeAssistantCustomGoals", JSON.stringify(goals));
+  } catch (error) {
+    console.error("Error saving custom goals:", error);
+  }
+}
+
+// Add a new custom goal
+function addCustomGoal(goalText) {
+  if (!goalText || !goalText.trim()) return false;
+
+  const goals = getCustomGoals();
+
+  // Check if goal already exists
+  if (
+    goals.some((goal) => goal.text.toLowerCase() === goalText.toLowerCase())
+  ) {
+    return false; // Already exists
+  }
+
+  // Check limit
+  if (goals.length >= 10) {
+    return false; // Max limit reached
+  }
+
+  const newGoal = {
+    id: Date.now().toString(),
+    text: goalText.trim(),
+    created: new Date().toISOString(),
+    usageCount: 0,
+  };
+
+  goals.push(newGoal);
+  saveCustomGoals(goals);
+  return true;
+}
+
+// Delete a custom goal
+function deleteCustomGoal(goalId) {
+  const goals = getCustomGoals();
+  const updatedGoals = goals.filter((goal) => goal.id !== goalId);
+  saveCustomGoals(updatedGoals);
+}
+
+// Increment usage count for a custom goal
+function incrementGoalUsage(goalId) {
+  const goals = getCustomGoals();
+  const goal = goals.find((g) => g.id === goalId);
+  if (goal) {
+    goal.usageCount = (goal.usageCount || 0) + 1;
+    saveCustomGoals(goals);
   }
 }
 
@@ -1125,19 +1181,53 @@ function showIntentionModal(inputField) {
     flex-direction: column;
   `;
 
-  modalContent.innerHTML = `
+  // Get custom goals
+  const customGoals = getCustomGoals();
+
+  // Build modal HTML
+  let modalHTML = `
     <h3 style="margin: 0 0 15px 0; color: #333; flex-shrink: 0;">What do you want to achieve?</h3>
     <div style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1;">
       <button class="intention-option" data-intention="get_better_price">💰 Get better price/discount</button>
       <button class="intention-option" data-intention="request_samples">📦 Request free samples</button>
-      <button class="intention-option" data-intention="negotiate_terms">📋 Negotiate payment terms</button>
       <button class="intention-option" data-intention="ask_specifications">📋 Ask for product specifications</button>
       <button class="intention-option" data-intention="request_moq">📊 Negotiate minimum order quantity</button>
-      <button class="intention-option" data-intention="other">❓ Other goal</button>
+      <button class="intention-option" data-intention="other">💬 General response</button>`;
+
+  // Add custom goals section if any exist
+  if (customGoals.length > 0) {
+    modalHTML += `<div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px;">
+      <div style="font-size: 12px; color: #666; margin-bottom: 8px; font-weight: 500;">⭐️ Your Custom Goals:</div>`;
+
+    customGoals.forEach((goal) => {
+      modalHTML += `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="intention-option custom-goal" data-intention="custom_${goal.id}" style="flex: 1;">
+            🎯 ${goal.text}
+          </button>
+          <button class="delete-goal-btn" data-goal-id="${goal.id}" title="Delete this goal" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">×</button>
+        </div>`;
+    });
+
+    modalHTML += `</div>`;
+  }
+
+  // Add custom goal input section
+  modalHTML += `
+      <div id="custom-goal-section" style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; display: none;">
+        <div style="font-size: 12px; color: #666; margin-bottom: 8px; font-weight: 500;">➕ Add Custom Goal:</div>
+        <input type="text" id="custom-goal-input" placeholder="Enter your goal..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; box-sizing: border-box;" maxlength="100">
+        <div style="display: flex; gap: 8px;">
+          <button id="add-custom-goal-btn" style="flex: 1; padding: 6px 12px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">Add Goal</button>
+          <button id="cancel-custom-goal-btn" style="padding: 6px 12px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+        </div>
+      </div>
+      <button id="show-custom-goal-section" style="width: 100%; padding: 8px; background: #e3f2fd; color: #1976d2; border: 1px solid #2196f3; border-radius: 4px; cursor: pointer; margin-top: 10px;">➕ Add custom goal...</button>
     </div>
     <button id="cancel-intention" style="margin-top: 15px; padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; flex-shrink: 0;">Cancel</button>
   `;
 
+  modalContent.innerHTML = modalHTML;
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
 
@@ -1157,15 +1247,90 @@ function showIntentionModal(inputField) {
       background: #e3f2fd;
       border-color: #2196f3;
     }
+    .custom-goal {
+      background: #fff3e0 !important;
+      border-color: #ff9800 !important;
+    }
+    .custom-goal:hover {
+      background: #ffe0b2 !important;
+    }
   `;
   document.head.appendChild(style);
 
-  // Handle intention selection
+  // Get references to elements
+  const customGoalSection = modalContent.querySelector("#custom-goal-section");
+  const showCustomSectionBtn = modalContent.querySelector(
+    "#show-custom-goal-section"
+  );
+  const customGoalInput = modalContent.querySelector("#custom-goal-input");
+  const addCustomGoalBtn = modalContent.querySelector("#add-custom-goal-btn");
+  const cancelCustomGoalBtn = modalContent.querySelector(
+    "#cancel-custom-goal-btn"
+  );
+
+  // Handle showing custom goal input section
+  showCustomSectionBtn.addEventListener("click", () => {
+    customGoalSection.style.display = "block";
+    showCustomSectionBtn.style.display = "none";
+    customGoalInput.focus();
+  });
+
+  // Handle canceling custom goal input
+  cancelCustomGoalBtn.addEventListener("click", () => {
+    customGoalSection.style.display = "none";
+    showCustomSectionBtn.style.display = "block";
+    customGoalInput.value = "";
+  });
+
+  // Handle adding custom goal
+  addCustomGoalBtn.addEventListener("click", () => {
+    const goalText = customGoalInput.value.trim();
+    if (!goalText) return;
+
+    if (addCustomGoal(goalText)) {
+      // Success - refresh modal
+      modal.remove();
+      showIntentionModal(inputField);
+      showBookmarkNotification("Custom goal added! 🎯", "#4caf50");
+    } else {
+      // Check what went wrong
+      const existingGoals = getCustomGoals();
+      if (existingGoals.length >= 10) {
+        showBookmarkNotification("Maximum 10 custom goals allowed!", "#f44336");
+      } else {
+        showBookmarkNotification("Goal already exists!", "#ff9800");
+      }
+    }
+  });
+
+  // Handle Enter key in input
+  customGoalInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      addCustomGoalBtn.click();
+    }
+  });
+
+  // Handle intention selection and custom goal deletion
   modalContent.addEventListener("click", (e) => {
     if (e.target.classList.contains("intention-option")) {
       const intention = e.target.dataset.intention;
+
+      // Handle custom goals
+      if (intention.startsWith("custom_")) {
+        const goalId = intention.replace("custom_", "");
+        incrementGoalUsage(goalId);
+      }
+
       modal.remove();
       generateAISuggestion(inputField, intention);
+    } else if (e.target.classList.contains("delete-goal-btn")) {
+      e.stopPropagation();
+      const goalId = e.target.dataset.goalId;
+      deleteCustomGoal(goalId);
+      // Refresh modal
+      modal.remove();
+      showIntentionModal(inputField);
+      showBookmarkNotification("Custom goal deleted!", "#ff9800");
     } else if (e.target.id === "cancel-intention") {
       modal.remove();
     }
@@ -1223,6 +1388,17 @@ function setupMessageObserver() {
 
 // Generate AI suggestion based on conversation history and intention
 function generateAISuggestion(inputField, intention) {
+  // Handle custom goals
+  let actualIntention = intention;
+  if (intention.startsWith("custom_")) {
+    const goalId = intention.replace("custom_", "");
+    const customGoals = getCustomGoals();
+    const customGoal = customGoals.find((g) => g.id === goalId);
+    if (customGoal) {
+      actualIntention = customGoal.text;
+    }
+  }
+
   // Collect last 2 messages from conversation
   const messages = [];
   const messageElements = document.querySelectorAll(".seller-msg, .user-msg");
@@ -1271,7 +1447,7 @@ function generateAISuggestion(inputField, intention) {
         {
           action: "generate_smart_suggestion",
           messages: messages,
-          intention: intention,
+          intention: actualIntention,
         },
         (response) => {
           if (response && response.suggestions) {
@@ -1313,14 +1489,13 @@ function showSmartSuggestions(suggestions, inputField) {
         padding: 12px;
         margin-bottom: 8px;
         display: flex;
-        align-items: center;
-        gap: 10px;
+        flex-direction: column;
+        gap: 8px;
       `;
 
       // Chinese text and copy button
       const chinesePart = document.createElement("div");
       chinesePart.style.cssText = `
-        flex: 1;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -1353,27 +1528,53 @@ function showSmartSuggestions(suggestions, inputField) {
         container.style.display = "none";
       };
 
-      // Get buyer's language text (dynamic key)
-      const buyerLanguageText = Object.keys(suggestion).find(
-        (key) => key !== "chinese"
-      );
-      const translatedText =
-        suggestion[buyerLanguageText] || suggestion.chinese;
-
-      // Translated text in buyer's language
-      const translatedTextSpan = document.createElement("span");
-      translatedTextSpan.textContent = translatedText;
-      translatedTextSpan.style.cssText = `
-        flex: 1;
-        font-size: 13px;
-        color: #666;
-        font-style: italic;
-      `;
-
       chinesePart.appendChild(chineseText);
       chinesePart.appendChild(copyBtn);
       item.appendChild(chinesePart);
-      item.appendChild(translatedTextSpan);
+
+      // Translation section
+      const translationPart = document.createElement("div");
+      translationPart.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding-left: 8px;
+        border-left: 2px solid #e3f2fd;
+      `;
+
+      // Always show English translation
+      if (suggestion.english) {
+        const englishText = document.createElement("div");
+        englishText.textContent = `🇺🇸 ${suggestion.english}`;
+        englishText.style.cssText = `
+          font-size: 13px;
+          color: #424242;
+          font-style: italic;
+        `;
+        translationPart.appendChild(englishText);
+      }
+
+      // Show buyer's language translation if different from English
+      const buyerLanguageKey = Object.keys(suggestion).find(
+        (key) => key !== "chinese" && key !== "english"
+      );
+      if (
+        buyerLanguageKey &&
+        suggestion[buyerLanguageKey] &&
+        suggestion[buyerLanguageKey] !== suggestion.english
+      ) {
+        const buyerText = document.createElement("div");
+        const flagEmoji = buyerLanguageKey === "bn" ? "🇧🇩" : "🌐";
+        buyerText.textContent = `${flagEmoji} ${suggestion[buyerLanguageKey]}`;
+        buyerText.style.cssText = `
+          font-size: 13px;
+          color: #d32f2f;
+          font-style: italic;
+        `;
+        translationPart.appendChild(buyerText);
+      }
+
+      item.appendChild(translationPart);
       container.appendChild(item);
     });
 
