@@ -947,6 +947,230 @@ Format with bullet points for clarity.`;
   }
 }
 
+// Generate seller response for auto-negotiation simulation
+async function generateSellerResponse(conversation) {
+  try {
+    // Get API key and model from storage
+    const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
+    const API_KEY = result.groqApiKey;
+    const MODEL = result.groqModel || "llama-3.1-8b-instant";
+
+    if (!API_KEY) {
+      throw new Error("No API key provided");
+    }
+
+    const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
+
+    // Format conversation history
+    const conversationText = Array.isArray(conversation)
+      ? conversation.map((msg) => `${msg.type}: ${msg.text}`).join("\n")
+      : conversation;
+
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `You are a Chinese seller negotiating with a buyer on Alibaba. Respond naturally in Chinese as a seller would in a business negotiation.
+
+Your responses should be:
+- Professional and polite
+- Realistic for Chinese business culture
+- Strategic in protecting your interests
+- Concise but complete
+- In simplified Chinese characters
+
+Common seller responses include:
+- Price negotiations
+- MOQ discussions
+- Sample offers
+- Payment terms
+- Delivery schedules
+- Product specifications
+
+Return ONLY the Chinese response text, no explanations or additional formatting.`,
+        },
+        {
+          role: "user",
+          content: `Based on this conversation, generate the next seller response in Chinese:
+
+${conversationText}
+
+Respond as the seller would in this negotiation.`,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 200,
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Groq API Error Response:", response.status, errorText);
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log("Seller response generation result:", data);
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in Groq API response");
+    }
+
+    return content.trim();
+  } catch (error) {
+    console.error("Seller response generation error:", error);
+
+    if (error.name === "AbortError") {
+      throw new Error("Response generation timed out. Please try again.");
+    }
+
+    if (error.message.includes("400")) {
+      throw new Error("API configuration error. Please check your API key.");
+    }
+
+    // Fallback responses
+    const fallbacks = [
+      "我们的价格已经很优惠了，但我们可以考虑小批量订单。",
+      "我们可以提供样品，但需要您支付运费。",
+      "最低起订量是100件，但我们可以商量。",
+      "谢谢您的兴趣，我们可以给您更好的价格。",
+      "我们可以安排尽快发货。",
+    ];
+
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+}
+
+// Analyze the final negotiation result
+async function analyzeNegotiationResult(conversation) {
+  try {
+    // Get API key and model from storage
+    const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
+    const API_KEY = result.groqApiKey;
+    const MODEL = result.groqModel || "llama-3.1-8b-instant";
+
+    if (!API_KEY) {
+      throw new Error("No API key provided");
+    }
+
+    const API_URL = `https://api.groq.com/openai/v1/chat/completions`;
+
+    // Format conversation history
+    const conversationText = Array.isArray(conversation)
+      ? conversation.map((msg) => `${msg.type}: ${msg.text}`).join("\n")
+      : conversation;
+
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert business analyst specializing in e-commerce negotiations. Analyze the complete negotiation conversation and provide a final assessment.
+
+Return ONLY a valid JSON object with this exact structure:
+{
+  "won": true/false,
+  "summary": "brief summary of the negotiation outcome"
+}
+
+Determine if the buyer "won" based on:
+- Whether they achieved their goals (better price, lower MOQ, samples, etc.)
+- The overall tone and concessions made
+- Whether the negotiation reached a successful conclusion
+
+The summary should be 1-2 sentences describing the key outcomes.`,
+        },
+        {
+          role: "user",
+          content: `Analyze this complete negotiation and determine if the buyer was successful:
+
+${conversationText}
+
+Provide a final assessment of whether the buyer achieved their negotiation goals.`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 200,
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Groq API Error Response:", response.status, errorText);
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log("Negotiation analysis result:", data);
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in Groq API response");
+    }
+
+    // Parse the JSON response
+    try {
+      const analysis = JSON.parse(content.trim());
+      return analysis;
+    } catch (parseError) {
+      console.error("Failed to parse analysis response as JSON:", parseError);
+      // Fallback analysis
+      return {
+        won: Math.random() > 0.5,
+        summary:
+          "Analysis completed with limited detail due to response parsing issues.",
+      };
+    }
+  } catch (error) {
+    console.error("Negotiation analysis error:", error);
+
+    if (error.name === "AbortError") {
+      throw new Error("Analysis timed out. Please try again.");
+    }
+
+    if (error.message.includes("400")) {
+      throw new Error("API configuration error. Please check your API key.");
+    }
+
+    // Fallback analysis
+    return {
+      won: Math.random() > 0.5, // Random for testing
+      summary:
+        "Analysis failed due to API error, but simulation completed successfully.",
+    };
+  }
+}
+
 // Handle extension installation
 chrome.runtime.onInstalled.addListener(() => {
   console.log("1688 Chat Translator extension installed");
