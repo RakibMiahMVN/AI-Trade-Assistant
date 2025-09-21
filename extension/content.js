@@ -1035,36 +1035,63 @@ function injectTranslateButton(inputField) {
   // Check if buttons already exist
   if (inputField.parentNode.querySelector(".translate-btn")) return;
 
-  // Create translate button
+  // Create unified translate button (combines language toggle + translation)
   const translateBtn = document.createElement("button");
   translateBtn.className = "translate-btn";
-  translateBtn.textContent = "中";
-  translateBtn.title = "Translate to Chinese";
+  translateBtn.textContent = "EN 中";
+  translateBtn.title = "Click to translate (EN mode) | Right-click to toggle language";
   translateBtn.style.cssText = `
     position: absolute;
     right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    background: #ff6b35;
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
     color: white;
     border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
-    font-weight: 500;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     z-index: 10;
+    box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 4px;
   `;
 
+  // Track current language mode
+  let currentLanguage = "en"; // "en" or "bn"
+
+  function updateButtonAppearance() {
+    if (currentLanguage === "en") {
+      translateBtn.textContent = "EN 中";
+      translateBtn.title = "Click to translate (English mode) | Right-click to switch to Banglish";
+      translateBtn.style.background = "linear-gradient(135deg, #ff6b35, #ff8c42)";
+      translateBtn.style.boxShadow = "0 2px 4px rgba(255, 107, 53, 0.3)";
+    } else {
+      translateBtn.textContent = "BN 中";
+      translateBtn.title = "Click to translate (Banglish mode) | Right-click to switch to English";
+      translateBtn.style.background = "linear-gradient(135deg, #A0522D, #8B4513)";
+      translateBtn.style.boxShadow = "0 2px 4px rgba(160, 82, 45, 0.3)";
+    }
+  }
+
   translateBtn.onmouseover = () => {
-    translateBtn.style.background = "#e55a2b";
+    const scale = currentLanguage === "en" ? 1.05 : 1.05;
+    translateBtn.style.transform = `translateY(-50%) scale(${scale})`;
+    translateBtn.style.boxShadow = currentLanguage === "en" 
+      ? "0 4px 12px rgba(255, 107, 53, 0.4)"
+      : "0 4px 12px rgba(160, 82, 45, 0.4)";
   };
 
   translateBtn.onmouseout = () => {
-    translateBtn.style.background = "#ff6b35";
+    translateBtn.style.transform = "translateY(-50%) scale(1)";
+    updateButtonAppearance();
   };
 
+  // Left click: Translate
   translateBtn.onclick = async () => {
     const text = inputField.value.trim();
     if (!text) return;
@@ -1074,26 +1101,55 @@ function injectTranslateButton(inputField) {
       translateBtn.textContent = "...";
       translateBtn.disabled = true;
 
-      // Request translation from background script
-      const response = await chrome.runtime.sendMessage({
-        action: "translate",
-        text: text,
-        from: "en",
-        to: "zh",
-      });
-      if (response.translation) {
-        inputField.value = response.translation;
-        // Trigger input event to update any listeners
-        inputField.dispatchEvent(new Event("input", { bubbles: true }));
+      if (currentLanguage === "bn") {
+        // Use AI translation for Banglish
+        const response = await chrome.runtime.sendMessage({
+          action: "translate_banglish_to_chinese",
+          text: text,
+        });
+
+        if (response.translation) {
+          inputField.value = response.translation;
+          inputField.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      } else {
+        // Use regular translation for English
+        const response = await chrome.runtime.sendMessage({
+          action: "translate",
+          text: text,
+          from: "en",
+          to: "zh",
+        });
+
+        if (response.translation) {
+          inputField.value = response.translation;
+          inputField.dispatchEvent(new Event("input", { bubbles: true }));
+        }
       }
     } catch (error) {
       console.error("Translation error:", error);
     } finally {
       // Reset button
-      translateBtn.textContent = "中";
+      updateButtonAppearance();
       translateBtn.disabled = false;
     }
   };
+
+  // Right click: Toggle language
+  translateBtn.oncontextmenu = (e) => {
+    e.preventDefault(); // Prevent context menu
+    currentLanguage = currentLanguage === "en" ? "bn" : "en";
+    updateButtonAppearance();
+    
+    // Visual feedback
+    translateBtn.style.transform = "translateY(-50%) scale(1.1)";
+    setTimeout(() => {
+      translateBtn.style.transform = "translateY(-50%) scale(1)";
+    }, 150);
+  };
+
+  // Initialize button appearance
+  updateButtonAppearance();
 
   // Create suggested reply button
   const suggestBtn = document.createElement("button");
@@ -1102,27 +1158,30 @@ function injectTranslateButton(inputField) {
   suggestBtn.title = "Get AI Suggestion";
   suggestBtn.style.cssText = `
     position: absolute;
-    right: 45px;
+    right: 75px;
     top: 50%;
     transform: translateY(-50%);
-    background: #2196f3;
+    background: linear-gradient(135deg, #2196f3, #42a5f5);
     color: white;
     border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
+    border-radius: 6px;
+    padding: 6px 10px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     z-index: 10;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
   `;
 
   suggestBtn.onmouseover = () => {
-    suggestBtn.style.background = "#1976d2";
+    suggestBtn.style.transform = "translateY(-50%) scale(1.05)";
+    suggestBtn.style.boxShadow = "0 4px 12px rgba(33, 150, 243, 0.4)";
   };
 
   suggestBtn.onmouseout = () => {
-    suggestBtn.style.background = "#2196f3";
+    suggestBtn.style.transform = "translateY(-50%) scale(1)";
+    suggestBtn.style.boxShadow = "0 2px 4px rgba(33, 150, 243, 0.3)";
   };
 
   suggestBtn.onclick = () => {
@@ -1160,7 +1219,7 @@ function injectTranslateButton(inputField) {
   inputField.parentNode.insertBefore(inputWrapper, inputField);
   inputWrapper.appendChild(inputField);
   inputField.style.flex = "1";
-  inputField.style.paddingRight = "90px";
+  inputField.style.paddingRight = "85px";
   inputField.style.overflow = "hidden";
 
   // Insert buttons and suggestions container into the wrapper

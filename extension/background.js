@@ -50,6 +50,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true; // Keep message channel open for async response
   }
+
+  if (request.action === "translate_banglish_to_chinese") {
+    translateBanglishToChinese(request.text)
+      .then((translation) => {
+        sendResponse({ translation });
+      })
+      .catch((error) => {
+        console.error("Banglish translation error:", error);
+        sendResponse({ error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
 });
 
 // Translate text using Google Translate unofficial API
@@ -664,6 +676,116 @@ function extractAnalysisFromText(text) {
   ];
 
   return analysis;
+}
+
+// Translate Banglish to Chinese using AI
+async function translateBanglishToChinese(banglishText) {
+  // Get API key and model from Chrome storage
+  const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
+  const API_KEY = result.groqApiKey;
+  const MODEL = result.groqModel || "llama-3.1-8b-instant";
+
+  if (!API_KEY || API_KEY.trim() === "") {
+    console.log("Groq API key not set. Please configure in extension popup.");
+    return "请设置您的 Groq API 密钥"; // Please set your Groq API key
+  }
+
+  const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+  try {
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `You are a specialized translator for Banglish (Bengali written in English script) to Chinese. Your task is to:
+
+1. Understand Banglish text (Bengali words transliterated into English letters)
+2. Convert the meaning to proper Chinese
+3. Return ONLY the Chinese translation, nothing else
+
+Common Banglish patterns:
+- "ami" = I/me
+- "tumi" = you
+- "khabar" = food/eat
+- "chai" = want
+- "valo" = good/better
+- "aro" = more
+- "onek" = many/very
+- "shona" = beautiful
+- "bhalo" = good
+- "kharap" = bad
+- "kichu" = something
+- "shob" = all/everything
+
+Examples:
+- "ami chai" → "我要" (I want)
+- "aro valo chai" → "想要更好的" (want better)
+- "onek bhalo" → "非常好" (very good)
+
+Translate naturally and contextually appropriate for business communication.`,
+        },
+        {
+          role: "user",
+          content: `Translate this Banglish to Chinese: "${banglishText}"`,
+        },
+      ],
+      max_tokens: 100,
+      temperature: 0.3,
+    };
+
+    console.log("Sending Banglish translation request to Groq API");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Groq API Error Response:", response.status, errorText);
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log("Banglish translation response:", data);
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in Groq API response");
+    }
+
+    console.log("Banglish translation result:", content.trim());
+
+    // Clean up the response (remove any extra text, quotes, etc.)
+    return content.trim().replace(/^["']|["']$/g, '');
+
+  } catch (error) {
+    console.error("Banglish translation error:", error);
+
+    if (error.name === "AbortError") {
+      console.error("Banglish translation request timed out");
+      return "翻译超时，请重试"; // Translation timed out, please try again
+    }
+
+    if (error.message.includes("400")) {
+      console.error("Bad request - likely invalid API key or model");
+      return "API 配置错误"; // API configuration error
+    }
+
+    // Fallback: return a generic message
+    return "翻译失败，请重试"; // Translation failed, please try again
+  }
 }
 
 // Handle extension installation
