@@ -248,6 +248,7 @@ async function generateSuggestions(sellerMessage) {
 
 // Generate smart suggestions based on conversation history and buyer intention
 async function generateSmartSuggestions(messages, intention) {
+  console.log(intention);
   // Get API key, model, and buyer language from Chrome storage
   const result = await chrome.storage.sync.get([
     "groqApiKey",
@@ -323,11 +324,11 @@ async function generateSmartSuggestions(messages, intention) {
       messages: [
         {
           role: "system",
-          content: `You are a skilled business negotiator helping a buyer communicate effectively with Chinese sellers on Alibaba. Your goal is to help the buyer achieve their objectives while maintaining polite, professional communication.
+          content: `You are a skilled business negotiator helping a BUYER communicate effectively with Chinese sellers on Alibaba. Your goal is to help the BUYER achieve their objectives while maintaining polite, professional communication.
 
 ${intentionPrompt}
 
-Provide exactly 2 strategic response suggestions in Chinese that would help the buyer achieve their goal. Each suggestion should be:
+Provide exactly 2 strategic response suggestions in Chinese that would help the BUYER achieve their goal. Each suggestion should be:
 - Polite and professional
 - Culturally appropriate for Chinese business communication
 - Strategic in advancing the buyer's interests
@@ -337,7 +338,7 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
         },
         {
           role: "user",
-          content: `Based on this conversation context, suggest 2 strategic responses in Chinese that would help achieve: ${intention.replace(
+          content: `Based on this conversation context, suggest 2 strategic responses in Chinese that would help achieve for BUYER: ${intention.replace(
             /_/g,
             " "
           )}${conversationContext}`,
