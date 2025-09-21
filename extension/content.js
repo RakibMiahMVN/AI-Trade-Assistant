@@ -528,6 +528,17 @@ function saveBookmarks(bookmarks) {
   }
 }
 
+// Get bookmarks from localStorage
+function getBookmarks() {
+  try {
+    const bookmarks = localStorage.getItem("aiTradeAssistantBookmarks");
+    return bookmarks ? JSON.parse(bookmarks) : [];
+  } catch (error) {
+    console.error("Error getting bookmarks:", error);
+    return [];
+  }
+}
+
 // Show bookmark suggestions when input field is focused
 function showBookmarkSuggestions(inputField) {
   const bookmarks = getBookmarks();

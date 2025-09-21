@@ -73,9 +73,17 @@
         background: #e55a2b;
       }
 
-      .btn:disabled {
-        background: #ccc;
-        cursor: not-allowed;
+      .bookmarks-section {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-top: 15px;
+      }
+
+      .bookmark-item:hover {
+        border-color: #2196f3 !important;
+        box-shadow: 0 2px 6px rgba(33, 150, 243, 0.2);
       }
     </style>
   </head>
@@ -223,6 +231,24 @@
         id="save-status"
         style="margin-top: 8px; font-size: 12px; color: #666"
       ></div>
+    </div>
+
+    <div class="bookmarks-section">
+      <h3 style="margin: 15px 0 10px 0; color: #333; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <span>📖 Saved Messages</span>
+        <button id="refresh-bookmarks" style="background: none; border: none; cursor: pointer; font-size: 12px; color: #666; padding: 2px 6px;">↻</button>
+      </h3>
+
+      <div id="bookmarks-container" style="max-height: 300px; overflow-y: auto;">
+        <div id="bookmarks-list">
+          <!-- Bookmarks will be loaded here -->
+        </div>
+
+        <div id="no-bookmarks" style="text-align: center; color: #999; font-size: 12px; padding: 20px; display: none;">
+          No saved messages yet.<br>
+          <small>Use the bookmark button (🔖) on messages in chat to save them.</small>
+        </div>
+      </div>
     </div>
 
     <button class="btn" id="test-btn">Test on Demo Page</button>
