@@ -250,73 +250,69 @@ function addBookmarkButtons() {
   });
 }
 
-// Add intention analysis buttons to the last 3 seller messages
+// Add intention analysis button to the last seller message only
 function addIntentionButtons() {
   const allSellerMessages = document.querySelectorAll(".seller-msg");
   if (allSellerMessages.length === 0) return;
 
-  // Get the last 3 seller messages
-  const lastThreeSellerMessages = Array.from(allSellerMessages).slice(-3);
+  // Get only the last seller message
+  const lastSellerMessage = allSellerMessages[allSellerMessages.length - 1];
 
-  lastThreeSellerMessages.forEach((msgElement) => {
-    // Check if button already exists
-    if (msgElement.parentNode.querySelector(".intention-btn")) return;
+  // Check if button already exists
+  if (lastSellerMessage.parentNode.querySelector(".intention-btn")) return;
 
-    // Create intention analysis button
-    const intentionBtn = document.createElement("button");
-    intentionBtn.className = "intention-btn";
-    intentionBtn.textContent = "?";
-    intentionBtn.title = "Analyze seller intention";
-    intentionBtn.style.cssText = `
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #ff6b35;
-      color: white;
-      border: 2px solid white;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s ease;
-      z-index: 10;
-    `;
+  // Create intention analysis button
+  const intentionBtn = document.createElement("button");
+  intentionBtn.className = "intention-btn";
+  intentionBtn.textContent = "?";
+  intentionBtn.title = "Analyze seller intention";
+  intentionBtn.style.cssText = `
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff6b35;
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    z-index: 10;
+  `;
 
-    intentionBtn.onmouseover = () => {
-      intentionBtn.style.background = "#e55a2b";
-      intentionBtn.style.transform = "scale(1.1)";
-    };
+  intentionBtn.onmouseover = () => {
+    intentionBtn.style.background = "#e55a2b";
+    intentionBtn.style.transform = "scale(1.1)";
+  };
 
-    intentionBtn.onmouseout = () => {
-      intentionBtn.style.background = "#ff6b35";
-      intentionBtn.style.transform = "scale(1)";
-    };
+  intentionBtn.onmouseout = () => {
+    intentionBtn.style.background = "#ff6b35";
+    intentionBtn.style.transform = "scale(1)";
+  };
 
-    intentionBtn.onclick = () => {
-      analyzeSellerIntention(msgElement);
-    };
+  intentionBtn.onclick = () => {
+    analyzeSellerIntention(lastSellerMessage);
+  };
 
-    // Make message content position relative for absolute positioning
-    const messageContent = msgElement.parentNode;
-    if (
-      messageContent &&
-      getComputedStyle(messageContent).position === "static"
-    ) {
-      messageContent.style.position = "relative";
-    }
+  // Make message content position relative for absolute positioning
+  const messageContent = lastSellerMessage.parentNode;
+  if (
+    messageContent &&
+    getComputedStyle(messageContent).position === "static"
+  ) {
+    messageContent.style.position = "relative";
+  }
 
-    // Insert button into the message content
-    messageContent.appendChild(intentionBtn);
-  });
-}
-
-// Bookmark a buyer message
+  // Insert button into the message content
+  messageContent.appendChild(intentionBtn);
+} // Bookmark a buyer message
 async function bookmarkMessage(messageElement) {
   // Extract only the original text, excluding translation overlays
   const originalText = Array.from(messageElement.childNodes)
@@ -870,20 +866,33 @@ async function showIntentionAnalysis(analysis, messageElement) {
 
 // Analyze seller intention using AI
 async function analyzeSellerIntention(messageElement) {
-  // Extract only the original text, excluding translation overlays
-  const messageText = Array.from(messageElement.childNodes)
-    .filter((node) => node.nodeType === Node.TEXT_NODE)
-    .map((node) => node.textContent.trim())
-    .join("")
-    .trim();
+  // Collect the last 3 seller messages for better context
+  const sellerMessages = [];
+  const allSellerMessages = document.querySelectorAll(".seller-msg");
 
-  if (!messageText) return;
+  // Get the last 3 seller messages (most recent first)
+  const lastThreeSellerMessages = Array.from(allSellerMessages).slice(-3);
+
+  for (const msgElement of lastThreeSellerMessages) {
+    // Extract only the original text, excluding translation overlays
+    const messageText = Array.from(msgElement.childNodes)
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent.trim())
+      .join("")
+      .trim();
+
+    if (messageText) {
+      sellerMessages.push(messageText);
+    }
+  }
+
+  if (sellerMessages.length === 0) return;
 
   try {
     // Send to background script for AI analysis
     const response = await chrome.runtime.sendMessage({
       action: "analyze_intention",
-      text: messageText,
+      messages: sellerMessages, // Send array of messages instead of single text
     });
 
     if (response && response.analysis) {
@@ -1110,12 +1119,15 @@ function showIntentionModal(inputField) {
     padding: 20px;
     max-width: 400px;
     width: 90%;
+    max-height: 80vh;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
   `;
 
   modalContent.innerHTML = `
-    <h3 style="margin: 0 0 15px 0; color: #333;">What do you want to achieve?</h3>
-    <div style="display: flex; flex-direction: column; gap: 10px;">
+    <h3 style="margin: 0 0 15px 0; color: #333; flex-shrink: 0;">What do you want to achieve?</h3>
+    <div style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1;">
       <button class="intention-option" data-intention="get_better_price">💰 Get better price/discount</button>
       <button class="intention-option" data-intention="request_samples">📦 Request free samples</button>
       <button class="intention-option" data-intention="negotiate_terms">📋 Negotiate payment terms</button>
@@ -1123,7 +1135,7 @@ function showIntentionModal(inputField) {
       <button class="intention-option" data-intention="request_moq">📊 Negotiate minimum order quantity</button>
       <button class="intention-option" data-intention="other">❓ Other goal</button>
     </div>
-    <button id="cancel-intention" style="margin-top: 15px; padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+    <button id="cancel-intention" style="margin-top: 15px; padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; flex-shrink: 0;">Cancel</button>
   `;
 
   modal.appendChild(modalContent);

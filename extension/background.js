@@ -40,7 +40,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "analyze_intention") {
-    analyzeSellerIntention(request.text)
+    analyzeSellerIntention(request.messages)
       .then((analysis) => {
         sendResponse({ analysis });
       })
@@ -469,7 +469,7 @@ Return only the Chinese text for each suggestion, separated by newlines. No Engl
 }
 
 // Analyze seller message intention using AI
-async function analyzeSellerIntention(sellerMessage) {
+async function analyzeSellerIntention(sellerMessages) {
   // Get API key, model, and buyer language from Chrome storage
   const result = await chrome.storage.sync.get([
     "groqApiKey",
@@ -492,13 +492,31 @@ async function analyzeSellerIntention(sellerMessage) {
 
   const API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
+  // Format the conversation context from multiple messages
+  let conversationContext = "";
+  if (Array.isArray(sellerMessages) && sellerMessages.length > 0) {
+    if (sellerMessages.length === 1) {
+      conversationContext = `Seller message: "${sellerMessages[0]}"`;
+    } else {
+      conversationContext =
+        "Recent seller messages:\n" +
+        sellerMessages.map((msg, index) => `${index + 1}. "${msg}"`).join("\n");
+    }
+  } else {
+    // Fallback for single message or invalid input
+    const singleMessage = Array.isArray(sellerMessages)
+      ? sellerMessages[0]
+      : sellerMessages;
+    conversationContext = `Seller message: "${singleMessage}"`;
+  }
+
   try {
     const requestBody = {
       model: MODEL,
       messages: [
         {
           role: "system",
-          content: `You are an expert business analyst specializing in Chinese e-commerce negotiations. Analyze the seller's message and provide a structured analysis in JSON format.
+          content: `You are an expert business analyst specializing in Chinese e-commerce negotiations. Analyze the seller's message(s) and provide a structured analysis in JSON format.
 
 Return ONLY a valid JSON object with this exact structure:
 {
@@ -509,14 +527,14 @@ Return ONLY a valid JSON object with this exact structure:
 }
 
 Focus on:
-- Tone: How polite/professional/firm the seller is
-- Price firmness: How willing they are to negotiate price
+- Tone: How polite/professional/firm the seller is across all messages
+- Price firmness: How willing they are to negotiate price based on the conversation
 - MOQ flexibility: How open they are to changing minimum order quantities
-- Key points: Important insights about their business approach or conditions`,
+- Key points: Important insights about their business approach, consistency, or evolving position`,
         },
         {
           role: "user",
-          content: `Analyze this seller message and provide intention analysis: "${sellerMessage}"`,
+          content: `Analyze these seller messages and provide intention analysis: ${conversationContext}`,
         },
       ],
       max_tokens: 300, // Reduced since we're generating in English
@@ -563,7 +581,7 @@ Focus on:
     } catch (parseError) {
       console.error("Failed to parse AI response as JSON:", parseError);
       // Try to extract information from non-JSON response
-      return extractAnalysisFromText(content, "en"); // Always extract in English
+      return extractAnalysisFromText(content); // Always extract in English
     }
   } catch (error) {
     console.error("Groq API error:", error);
@@ -602,7 +620,7 @@ Focus on:
 }
 
 // Extract analysis from text response if JSON parsing fails
-function extractAnalysisFromText(text, buyerLanguage = "en") {
+function extractAnalysisFromText(text) {
   // Simple fallback parsing - always in English
   const analysis = {
     tone: "Neutral",
