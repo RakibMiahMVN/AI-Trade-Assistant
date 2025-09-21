@@ -320,9 +320,9 @@ function addIntentionButtons() {
 async function bookmarkMessage(messageElement) {
   // Extract only the original text, excluding translation overlays
   const originalText = Array.from(messageElement.childNodes)
-    .filter(node => node.nodeType === Node.TEXT_NODE)
-    .map(node => node.textContent.trim())
-    .join('')
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent.trim())
+    .join("")
     .trim();
 
   if (!originalText) return;
@@ -872,9 +872,9 @@ async function showIntentionAnalysis(analysis, messageElement) {
 async function analyzeSellerIntention(messageElement) {
   // Extract only the original text, excluding translation overlays
   const messageText = Array.from(messageElement.childNodes)
-    .filter(node => node.nodeType === Node.TEXT_NODE)
-    .map(node => node.textContent.trim())
-    .join('')
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent.trim())
+    .join("")
     .trim();
 
   if (!messageText) return;
@@ -1237,9 +1237,9 @@ function generateAISuggestion(inputField, intention) {
     } else {
       // If no message-content div, extract only text nodes excluding overlays
       const originalText = Array.from(el.childNodes)
-        .filter(node => node.nodeType === Node.TEXT_NODE)
-        .map(node => node.textContent.trim())
-        .join('')
+        .filter((node) => node.nodeType === Node.TEXT_NODE)
+        .map((node) => node.textContent.trim())
+        .join("")
         .trim();
 
       if (originalText) {
