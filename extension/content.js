@@ -60,7 +60,7 @@ function addSummaryButton() {
   summaryButton.style.cssText = `
     position: fixed;
     right: 20px;
-    top: 50%;
+    top: 40%;
     transform: translateY(-50%);
     width: 50px;
     height: 50px;
@@ -95,8 +95,68 @@ function addSummaryButton() {
   document.body.appendChild(summaryButton);
 }
 
-// Call the function to add the summary button when content script loads
+// Create and add a floating review button to the right center of the screen
+function addReviewButton() {
+  // Check if button already exists
+  if (document.getElementById('seller-review-button')) return;
+  
+  const reviewButton = document.createElement('button');
+  reviewButton.id = 'seller-review-button';
+  reviewButton.textContent = '⭐';
+  reviewButton.title = 'Rate this seller as a buyer';
+  reviewButton.style.cssText = `
+    position: fixed;
+    right: 20px;
+    top: 60%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFC107, #FF9800);
+    color: white;
+    border: none;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  `;
+  
+  // Add hover effects
+  reviewButton.onmouseover = () => {
+    reviewButton.style.transform = 'translateY(-50%) scale(1.1)';
+    reviewButton.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.4)';
+  };
+  
+  reviewButton.onmouseout = () => {
+    reviewButton.style.transform = 'translateY(-50%)';
+    reviewButton.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.3)';
+  };
+  
+  // Add click event
+  reviewButton.onclick = () => {
+    // Check if there are any reviews already
+    const allReviews = getAllReviews();
+    const sellerNames = Object.keys(allReviews);
+    
+    if (sellerNames.length > 0) {
+      // If reviews exist, show reviews list
+      showReviewsList();
+    } else {
+      // If no reviews exist, show the review form
+      showReviewForm();
+    }
+  };
+  
+  document.body.appendChild(reviewButton);
+}
+
+// Call the functions to add the buttons when content script loads
 addSummaryButton();
+addReviewButton();
 
 // Create and display the summary modal
 function showSummaryModal() {
@@ -380,6 +440,533 @@ function showSummaryModal() {
   generateConversationSummary();
 }
 
+// Function to show the review form modal
+function showReviewForm() {
+  // Extract seller name from the conversation
+  let sellerName = extractSellerName() || "Seller";
+  
+  // Check if modal already exists and remove it
+  const existingModal = document.getElementById('seller-review-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Create modal container with backdrop
+  const modal = document.createElement('div');
+  modal.id = 'seller-review-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10002;
+    animation: fadeIn 0.3s ease;
+  `;
+  
+  // Create modal content
+  const modalContent = document.createElement('div');
+  modalContent.style.cssText = `
+    background: linear-gradient(to bottom, #ffffff, #f7f9fc);
+    width: 90%;
+    max-width: 500px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    padding: 25px;
+    position: relative;
+    animation: scaleIn 0.3s ease;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+  `;
+  
+  // Create header
+  const header = document.createElement('div');
+  header.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid rgba(255, 193, 7, 0.2);
+    padding-bottom: 15px;
+  `;
+  
+  // Add title
+  const title = document.createElement('h3');
+  title.innerHTML = `⭐ <span style="background: linear-gradient(45deg, #FFC107, #FF9800); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Rate Seller: ${sellerName}</span>`;
+  title.style.cssText = `
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  `;
+  
+  // Add close button
+  const closeButton = document.createElement('button');
+  closeButton.innerHTML = '✕';
+  closeButton.style.cssText = `
+    background: linear-gradient(45deg, #ff6b35, #ff9d5c);
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+  `;
+  closeButton.onclick = () => modal.remove();
+  
+  // Create form content
+  const formContainer = document.createElement('div');
+  formContainer.style.cssText = `
+    padding: 10px 0;
+  `;
+  
+  // Add buyer review note
+  const buyerNote = document.createElement('div');
+  buyerNote.textContent = 'As a buyer, how would you rate your experience with this seller?';
+  buyerNote.style.cssText = `
+    margin-bottom: 15px;
+    color: #666;
+    font-size: 14px;
+    font-style: italic;
+  `;
+  formContainer.appendChild(buyerNote);
+  
+  // Add rating selector
+  const ratingContainer = document.createElement('div');
+  ratingContainer.style.cssText = `
+    margin-bottom: 20px;
+  `;
+  
+  const ratingLabel = document.createElement('div');
+  ratingLabel.textContent = 'Rating:';
+  ratingLabel.style.cssText = `
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #555;
+  `;
+  
+  // Create star rating system
+  const starsContainer = document.createElement('div');
+  starsContainer.style.cssText = `
+    display: flex;
+    gap: 10px;
+    font-size: 30px;
+  `;
+  
+  let selectedRating = 0;
+  const starElements = [];
+  
+  for (let i = 1; i <= 5; i++) {
+    const star = document.createElement('span');
+    star.textContent = '☆';  // Empty star
+    star.dataset.rating = i;
+    star.style.cssText = `
+      cursor: pointer;
+      color: #ddd;
+      transition: all 0.2s ease;
+    `;
+    
+    // Hover effect
+    star.onmouseover = () => {
+      // Fill stars up to this one
+      for (let j = 0; j < i; j++) {
+        starElements[j].textContent = '★';
+        starElements[j].style.color = '#FFC107';
+      }
+    };
+    
+    star.onmouseout = () => {
+      // Reset to selected rating
+      starElements.forEach((s, index) => {
+        if (index < selectedRating) {
+          s.textContent = '★';
+          s.style.color = '#FFC107';
+        } else {
+          s.textContent = '☆';
+          s.style.color = '#ddd';
+        }
+      });
+    };
+    
+    // Click to set rating
+    star.onclick = () => {
+      selectedRating = i;
+      starElements.forEach((s, index) => {
+        if (index < selectedRating) {
+          s.textContent = '★';
+          s.style.color = '#FFC107';
+        } else {
+          s.textContent = '☆';
+          s.style.color = '#ddd';
+        }
+      });
+    };
+    
+    starsContainer.appendChild(star);
+    starElements.push(star);
+  }
+  
+  // Add comment field
+  const commentContainer = document.createElement('div');
+  commentContainer.style.cssText = `
+    margin-bottom: 20px;
+  `;
+  
+  const commentLabel = document.createElement('div');
+  commentLabel.textContent = 'Comments:';
+  commentLabel.style.cssText = `
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #555;
+  `;
+  
+  const commentTextarea = document.createElement('textarea');
+  commentTextarea.placeholder = 'Share your experience as a buyer with this seller...';
+  commentTextarea.style.cssText = `
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    resize: vertical;
+    min-height: 100px;
+    box-sizing: border-box;
+    transition: border 0.3s ease;
+  `;
+  
+  commentTextarea.onfocus = () => {
+    commentTextarea.style.borderColor = '#FFC107';
+    commentTextarea.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.2)';
+  };
+  
+  commentTextarea.onblur = () => {
+    commentTextarea.style.borderColor = '#ddd';
+    commentTextarea.style.boxShadow = 'none';
+  };
+  
+  // Add seller name field (hidden but used for saving)
+  const sellerNameInput = document.createElement('input');
+  sellerNameInput.type = 'hidden';
+  sellerNameInput.id = 'review-seller-name';
+  sellerNameInput.value = sellerName;
+  
+  // Add submit button
+  const submitButton = document.createElement('button');
+  submitButton.textContent = 'Save Review';
+  submitButton.style.cssText = `
+    background: linear-gradient(45deg, #FFC107, #FF9800);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+  `;
+  
+  submitButton.onmouseover = () => {
+    submitButton.style.transform = 'translateY(-2px)';
+    submitButton.style.boxShadow = '0 5px 10px rgba(0,0,0,0.2)';
+  };
+  
+  submitButton.onmouseout = () => {
+    submitButton.style.transform = 'translateY(0)';
+    submitButton.style.boxShadow = '0 3px 5px rgba(0,0,0,0.1)';
+  };
+  
+  // Add submit event
+  submitButton.onclick = () => {
+    if (selectedRating === 0) {
+      alert('Please select a rating.');
+      return;
+    }
+    
+    const success = saveReview(sellerName, selectedRating, commentTextarea.value);
+    
+    if (success) {
+      // Show success message
+      showCopyNotification('Review saved successfully!', '#4CAF50');
+      
+      // Reset form for additional reviews
+      selectedRating = 0;
+      commentTextarea.value = '';
+      
+      // Reset stars to empty
+      starElements.forEach(s => {
+        s.textContent = '☆';
+        s.style.color = '#ddd';
+      });
+      
+      // Show the reviews list below the form
+      showReviewsInModal(sellerName);
+    } else {
+      showCopyNotification('Failed to save review', '#F44336');
+    }
+  };
+  
+  // Show previous reviews button
+  const viewReviewsButton = document.createElement('button');
+  viewReviewsButton.textContent = 'View All Reviews';
+  viewReviewsButton.style.cssText = `
+    background: none;
+    border: 2px solid #FFC107;
+    color: #FFC107;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    margin-top: 15px;
+    transition: all 0.2s ease;
+  `;
+  
+  viewReviewsButton.onmouseover = () => {
+    viewReviewsButton.style.background = 'rgba(255, 193, 7, 0.1)';
+  };
+  
+  viewReviewsButton.onmouseout = () => {
+    viewReviewsButton.style.background = 'none';
+  };
+  
+  viewReviewsButton.onclick = () => {
+    modal.remove();
+    showReviewsList();
+  };
+  
+  // Assemble the form
+  ratingContainer.appendChild(ratingLabel);
+  ratingContainer.appendChild(starsContainer);
+  
+  commentContainer.appendChild(commentLabel);
+  commentContainer.appendChild(commentTextarea);
+  
+  formContainer.appendChild(ratingContainer);
+  formContainer.appendChild(commentContainer);
+  formContainer.appendChild(sellerNameInput);
+  formContainer.appendChild(submitButton);
+  formContainer.appendChild(viewReviewsButton);
+  
+  // Create reviews container for displaying reviews within the modal
+  const reviewsContainer = document.createElement('div');
+  reviewsContainer.id = 'modal-reviews-container';
+  reviewsContainer.style.cssText = `
+    margin-top: 25px;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #FFC107 #f1f1f1;
+    border-top: 1px solid rgba(255, 193, 7, 0.3);
+    padding-top: 15px;
+    display: none;
+  `;
+  
+  // Add scrollbar styling
+  const reviewsScrollStyle = document.createElement('style');
+  reviewsScrollStyle.textContent = `
+    #modal-reviews-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    #modal-reviews-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    #modal-reviews-container::-webkit-scrollbar-thumb {
+      background: linear-gradient(45deg, #FFC107, #FF9800);
+      border-radius: 10px;
+    }
+  `;
+  document.head.appendChild(reviewsScrollStyle);
+  
+  // Assemble the modal
+  header.appendChild(title);
+  header.appendChild(closeButton);
+  
+  modalContent.appendChild(header);
+  modalContent.appendChild(formContainer);
+  modalContent.appendChild(reviewsContainer);
+  
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+}
+
+// Function to show reviews directly in the review modal
+function showReviewsInModal(sellerName) {
+  const reviewsContainer = document.getElementById('modal-reviews-container');
+  if (!reviewsContainer) return;
+  
+  // Get reviews for this seller
+  const reviews = getSellerReviews(sellerName);
+  
+  // Clear container and show it
+  reviewsContainer.innerHTML = '';
+  reviewsContainer.style.display = 'block';
+  
+  // Add header
+  const reviewsHeader = document.createElement('div');
+  reviewsHeader.style.cssText = `
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  `;
+  
+  const reviewsTitle = document.createElement('h4');
+  reviewsTitle.textContent = 'Recent Reviews';
+  reviewsTitle.style.cssText = `
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+  `;
+  
+  const reviewCount = document.createElement('span');
+  reviewCount.textContent = `${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`;
+  reviewCount.style.cssText = `
+    color: #666;
+    font-size: 14px;
+  `;
+  
+  reviewsHeader.appendChild(reviewsTitle);
+  reviewsHeader.appendChild(reviewCount);
+  reviewsContainer.appendChild(reviewsHeader);
+  
+  // No reviews message
+  if (reviews.length === 0) {
+    const noReviews = document.createElement('div');
+    noReviews.style.cssText = `
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    `;
+    noReviews.textContent = 'No reviews yet. Be the first to review!';
+    reviewsContainer.appendChild(noReviews);
+    return;
+  }
+  
+  // Add reviews
+  reviews.forEach(review => {
+    const reviewItem = document.createElement('div');
+    reviewItem.style.cssText = `
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border: 1px solid #eee;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    `;
+    
+    // Rating stars
+    const stars = document.createElement('div');
+    stars.style.cssText = `
+      color: #FFC107;
+      font-size: 18px;
+      margin-bottom: 10px;
+    `;
+    
+    for (let i = 1; i <= 5; i++) {
+      stars.innerHTML += i <= review.rating ? '★' : '☆';
+    }
+    
+    // Review comment
+    const comment = document.createElement('div');
+    comment.style.cssText = `
+      color: #333;
+      font-size: 14px;
+      line-height: 1.5;
+    `;
+    comment.textContent = review.comment || 'No comment provided';
+    
+    // Review date
+    const date = document.createElement('div');
+    date.style.cssText = `
+      color: #999;
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: right;
+    `;
+    date.textContent = new Date(review.date).toLocaleString();
+    
+    reviewItem.appendChild(stars);
+    reviewItem.appendChild(comment);
+    reviewItem.appendChild(date);
+    reviewsContainer.appendChild(reviewItem);
+  });
+}
+
+// Function to extract seller name from conversation
+function extractSellerName() {
+  // Try to find seller name in the conversation
+  const sellerMessages = document.querySelectorAll('.seller-msg');
+  
+  // Check for seller name in page metadata (usually present in chat windows)
+  const possibleNameElements = document.querySelectorAll('.seller-name, .chat-participant, .merchant-name, .trader-name');
+  
+  if (possibleNameElements.length > 0) {
+    for (const element of possibleNameElements) {
+      const text = element.textContent.trim();
+      if (text && text.length > 0 && text.length < 30) {
+        return text; // Return the first reasonable seller name found
+      }
+    }
+  }
+  
+  // Check message headers for seller identification
+  const messageHeaders = document.querySelectorAll('.message-header, .chat-header');
+  for (const header of messageHeaders) {
+    if (header.textContent.includes('seller') || header.textContent.includes('merchant')) {
+      const text = header.textContent.trim();
+      // Extract name using regex - look for patterns like "Seller: Name" or "Name (Seller)"
+      const nameMatch = text.match(/(?:Seller|Merchant):\s*([^:]+)|([^(]+)\s+\((?:Seller|Merchant)\)/i);
+      if (nameMatch) {
+        const name = (nameMatch[1] || nameMatch[2]).trim();
+        if (name && name.length > 0) {
+          return name;
+        }
+      }
+    }
+  }
+  
+  // Use the page title as fallback if it contains likely seller information
+  const pageTitle = document.title;
+  if (pageTitle && (pageTitle.includes('chat') || pageTitle.includes('message'))) {
+    const parts = pageTitle.split(/[|:—-]/);
+    if (parts.length > 1) {
+      const potentialName = parts[0].trim();
+      if (potentialName.length > 0 && potentialName.length < 30) {
+        return potentialName;
+      }
+    }
+  }
+  
+  // For demo.html and testing purposes, generate a random seller name
+  // In real implementation this would be replaced with actual seller info
+  const demoNames = ["TradeMaster", "GlobalSupply", "SunriseTrade", "QualityGoods", "FastShip"];
+  const randomIndex = Math.floor(Math.random() * demoNames.length);
+  return demoNames[randomIndex];
+}
+
 // Function to copy the summary to clipboard
 function copySummaryToClipboard() {
   // Find the summary container
@@ -419,6 +1006,439 @@ function copySummaryToClipboard() {
     console.error('Copy error:', error);
     showCopyNotification('Failed to copy summary', '#F44336');
   }
+}
+
+// Function to save a review to localStorage
+function saveReview(sellerName, rating, comment) {
+  try {
+    // Get existing reviews
+    let allReviews = localStorage.getItem('aiTradeAssistantReviews');
+    allReviews = allReviews ? JSON.parse(allReviews) : {};
+    
+    // Initialize seller reviews if not exists
+    if (!allReviews[sellerName]) {
+      allReviews[sellerName] = [];
+    }
+    
+    // Add new review with timestamp
+    const newReview = {
+      rating: rating,
+      comment: comment,
+      date: new Date().toISOString(),
+    };
+    
+    // Add to beginning of array for most recent first
+    allReviews[sellerName].unshift(newReview);
+    
+    // Save back to localStorage
+    localStorage.setItem('aiTradeAssistantReviews', JSON.stringify(allReviews));
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving review:', error);
+    return false;
+  }
+}
+
+// Function to get all reviews
+function getAllReviews() {
+  try {
+    const reviews = localStorage.getItem('aiTradeAssistantReviews');
+    return reviews ? JSON.parse(reviews) : {};
+  } catch (error) {
+    console.error('Error getting reviews:', error);
+    return {};
+  }
+}
+
+// Function to get reviews for a specific seller
+function getSellerReviews(sellerName) {
+  const allReviews = getAllReviews();
+  return allReviews[sellerName] || [];
+}
+
+// Function to calculate average rating for a seller
+function getSellerAverageRating(sellerName) {
+  const reviews = getSellerReviews(sellerName);
+  
+  if (reviews.length === 0) return 0;
+  
+  const sum = reviews.reduce((total, review) => total + review.rating, 0);
+  return sum / reviews.length;
+}
+
+// Function to show the reviews list modal
+function showReviewsList() {
+  // Check if modal already exists and remove it
+  const existingModal = document.getElementById('reviews-list-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Get all reviews
+  const allReviews = getAllReviews();
+  const sellerNames = Object.keys(allReviews);
+  
+  // Create modal container with backdrop
+  const modal = document.createElement('div');
+  modal.id = 'reviews-list-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10002;
+    animation: fadeIn 0.3s ease;
+  `;
+  
+  // Create modal content
+  const modalContent = document.createElement('div');
+  modalContent.style.cssText = `
+    background: linear-gradient(to bottom, #ffffff, #f7f9fc);
+    width: 90%;
+    max-width: 700px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    padding: 25px;
+    position: relative;
+    animation: scaleIn 0.3s ease;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  `;
+  
+  // Create header
+  const header = document.createElement('div');
+  header.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid rgba(255, 193, 7, 0.2);
+    padding-bottom: 15px;
+  `;
+  
+  // Add title
+  const title = document.createElement('h3');
+  title.innerHTML = `📊 <span style="background: linear-gradient(45deg, #FFC107, #FF9800); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Buyer Reviews of Sellers</span>`;
+  title.style.cssText = `
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  `;
+  
+  // Add close button
+  const closeButton = document.createElement('button');
+  closeButton.innerHTML = '✕';
+  closeButton.style.cssText = `
+    background: linear-gradient(45deg, #ff6b35, #ff9d5c);
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+  `;
+  closeButton.onclick = () => modal.remove();
+  
+  // Create tabs container if there are multiple sellers
+  const tabsContainer = document.createElement('div');
+  tabsContainer.style.cssText = `
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 0;
+    margin-bottom: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: #FFC107 #f1f1f1;
+  `;
+  
+  // Add custom scrollbar styling for tabs
+  const tabsScrollStyle = document.createElement('style');
+  tabsScrollStyle.textContent = `
+    #reviews-list-modal .tabs-container::-webkit-scrollbar {
+      height: 6px;
+    }
+    
+    #reviews-list-modal .tabs-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    #reviews-list-modal .tabs-container::-webkit-scrollbar-thumb {
+      background: linear-gradient(45deg, #FFC107, #FF9800);
+      border-radius: 10px;
+    }
+  `;
+  document.head.appendChild(tabsScrollStyle);
+  
+  // Create content container
+  const contentContainer = document.createElement('div');
+  contentContainer.style.cssText = `
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #FFC107 #f1f1f1;
+  `;
+  
+  // Add custom scrollbar styling for content
+  const contentScrollStyle = document.createElement('style');
+  contentScrollStyle.textContent = `
+    #reviews-list-modal .content-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    #reviews-list-modal .content-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    #reviews-list-modal .content-container::-webkit-scrollbar-thumb {
+      background: linear-gradient(45deg, #FFC107, #FF9800);
+      border-radius: 10px;
+    }
+  `;
+  document.head.appendChild(contentScrollStyle);
+  
+  // No reviews state
+  if (sellerNames.length === 0) {
+    const noReviewsMessage = document.createElement('div');
+    noReviewsMessage.style.cssText = `
+      text-align: center;
+      padding: 50px 20px;
+      color: #666;
+      font-size: 16px;
+    `;
+    noReviewsMessage.innerHTML = `
+      <div style="font-size: 40px; margin-bottom: 20px;">📝</div>
+      <div style="font-weight: 500; margin-bottom: 10px;">No reviews yet</div>
+      <div>Click the ⭐ button in the summary modal to add your first review.</div>
+    `;
+    contentContainer.appendChild(noReviewsMessage);
+  } else {
+    // Add tabs for each seller
+    sellerNames.forEach((sellerName, index) => {
+      const tab = document.createElement('button');
+      const reviews = allReviews[sellerName];
+      const avgRating = getSellerAverageRating(sellerName);
+      
+      tab.innerHTML = `${sellerName} <span style="color: #FFC107; margin-left: 5px;">${avgRating.toFixed(1)}⭐</span>`;
+      tab.style.cssText = `
+        padding: 10px 15px;
+        border: none;
+        background: ${index === 0 ? 'linear-gradient(45deg, #FFC107, #FF9800)' : '#f1f1f1'};
+        color: ${index === 0 ? 'white' : '#555'};
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      `;
+      
+      tab.dataset.sellerName = sellerName;
+      
+      tab.onclick = () => {
+        // Update active tab
+        document.querySelectorAll('#reviews-list-modal .tabs-container button').forEach(t => {
+          t.style.background = '#f1f1f1';
+          t.style.color = '#555';
+        });
+        tab.style.background = 'linear-gradient(45deg, #FFC107, #FF9800)';
+        tab.style.color = 'white';
+        
+        // Show this seller's reviews
+        showSellerReviews(sellerName);
+      };
+      
+      tabsContainer.appendChild(tab);
+      
+      // Display first seller's reviews by default
+      if (index === 0) {
+        setTimeout(() => {
+          showSellerReviews(sellerName);
+        }, 10);
+      }
+    });
+  }
+  
+  // Function to display a specific seller's reviews
+  function showSellerReviews(sellerName) {
+    contentContainer.innerHTML = '';
+    
+    const reviews = getSellerReviews(sellerName);
+    const avgRating = getSellerAverageRating(sellerName);
+    
+    // Add header with average rating
+    const sellerHeader = document.createElement('div');
+    sellerHeader.style.cssText = `
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+    `;
+    
+    const avgRatingDisplay = document.createElement('div');
+    avgRatingDisplay.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 10px;
+    `;
+    
+    const ratingNumber = document.createElement('div');
+    ratingNumber.style.cssText = `
+      font-size: 32px;
+      font-weight: 700;
+      color: #FF9800;
+    `;
+    ratingNumber.textContent = avgRating.toFixed(1);
+    
+    const starsDisplay = document.createElement('div');
+    starsDisplay.style.cssText = `
+      color: #FFC107;
+      font-size: 20px;
+    `;
+    
+    // Generate filled and empty stars based on average rating
+    const filledStars = Math.floor(avgRating);
+    const hasHalfStar = avgRating - filledStars >= 0.5;
+    
+    for (let i = 1; i <= 5; i++) {
+      if (i <= filledStars) {
+        starsDisplay.innerHTML += '★'; // Full star
+      } else if (i === filledStars + 1 && hasHalfStar) {
+        starsDisplay.innerHTML += '⯨'; // Half star
+      } else {
+        starsDisplay.innerHTML += '☆'; // Empty star
+      }
+    }
+    
+    const reviewCount = document.createElement('div');
+    reviewCount.style.cssText = `
+      font-size: 14px;
+      color: #666;
+    `;
+    reviewCount.textContent = `${reviews.length} review${reviews.length !== 1 ? 's' : ''}`;
+    
+    avgRatingDisplay.appendChild(ratingNumber);
+    avgRatingDisplay.appendChild(starsDisplay);
+    sellerHeader.appendChild(avgRatingDisplay);
+    sellerHeader.appendChild(reviewCount);
+    contentContainer.appendChild(sellerHeader);
+    
+    // Add reviews list
+    reviews.forEach(review => {
+      const reviewItem = document.createElement('div');
+      reviewItem.style.cssText = `
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #eee;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      `;
+      
+      // Rating stars
+      const stars = document.createElement('div');
+      stars.style.cssText = `
+        color: #FFC107;
+        font-size: 18px;
+        margin-bottom: 10px;
+      `;
+      
+      for (let i = 1; i <= 5; i++) {
+        stars.innerHTML += i <= review.rating ? '★' : '☆';
+      }
+      
+      // Date
+      const date = document.createElement('div');
+      date.style.cssText = `
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 8px;
+      `;
+      
+      const reviewDate = new Date(review.date);
+      date.textContent = reviewDate.toLocaleString();
+      
+      // Comment
+      const comment = document.createElement('div');
+      comment.style.cssText = `
+        font-size: 14px;
+        line-height: 1.5;
+        color: #333;
+      `;
+      comment.textContent = review.comment || 'No comment provided';
+      
+      reviewItem.appendChild(stars);
+      reviewItem.appendChild(date);
+      reviewItem.appendChild(comment);
+      contentContainer.appendChild(reviewItem);
+    });
+  }
+  
+  // Add new review button
+  const addReviewButton = document.createElement('button');
+  addReviewButton.innerHTML = '+ Add New Review';
+  addReviewButton.style.cssText = `
+    background: linear-gradient(45deg, #4CAF50, #8BC34A);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.2s ease;
+  `;
+  
+  addReviewButton.onmouseover = () => {
+    addReviewButton.style.transform = 'translateY(-2px)';
+    addReviewButton.style.boxShadow = '0 5px 10px rgba(0,0,0,0.2)';
+  };
+  
+  addReviewButton.onmouseout = () => {
+    addReviewButton.style.transform = 'translateY(0)';
+    addReviewButton.style.boxShadow = 'none';
+  };
+  
+  addReviewButton.onclick = () => {
+    modal.remove();
+    showReviewForm();
+  };
+  
+  // Assemble the modal
+  header.appendChild(title);
+  header.appendChild(closeButton);
+  
+  modalContent.appendChild(header);
+  
+  if (sellerNames.length > 0) {
+    modalContent.appendChild(tabsContainer);
+  }
+  
+  modalContent.appendChild(contentContainer);
+  modalContent.appendChild(addReviewButton);
+  
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
 }
 
 // Function to show copy notification
