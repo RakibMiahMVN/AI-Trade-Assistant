@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Trade Assistant Demo - International Commerce</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background: #f5f5f5;
+        color: #333;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #ff6b35, #ff8c42);
+        color: white;
+        padding: 15px 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header h1 {
+        font-size: 18px;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .chat-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      #chat-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background: #fafafa;
+      }
+
+      .message {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+      }
+
+      .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+
+      .seller-avatar {
+        background: linear-gradient(135deg, #ff6b35, #ff8c42);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+
+      .user-avatar {
+        background: linear-gradient(135deg, #2196f3, #42a5f5);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+
+      .message-content {
+        flex: 1;
+        background: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+
+      .seller-msg {
+        border-left: 3px solid #ff6b35;
+      }
+
+      .user-msg {
+        background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+        margin-left: auto;
+        margin-right: 0;
+        text-align: right;
+      }
+
+      .message-time {
+        font-size: 12px;
+        color: #999;
+        margin-top: 4px;
+      }
+
+      .input-container {
+        border-top: 1px solid #e0e0e0;
+        padding: 20px;
+        background: white;
+      }
+
+      .input-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+      }
+
+      #chat-input {
+        flex: 1;
+        min-height: 40px;
+        max-height: 120px;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        resize: vertical;
+        outline: none;
+        transition: border-color 0.3s;
+      }
+
+      #chat-input:focus {
+        border-color: #ff6b35;
+      }
+
+      .send-btn {
+        background: linear-gradient(135deg, #ff6b35, #ff8c42);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .send-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(255, 107, 53, 0.3);
+      }
+
+      .suggestions-container {
+        margin-bottom: 10px;
+        display: none;
+      }
+
+      .suggestion-item {
+        background: linear-gradient(
+          135deg,
+          rgba(33, 150, 243, 0.1),
+          rgba(33, 150, 243, 0.05)
+        );
+        border: 1px solid #2196f3;
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin-right: 8px;
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: #1565c0;
+        cursor: pointer;
+        display: inline-block;
+        transition: all 0.3s;
+      }
+
+      .suggestion-item:hover {
+        background: linear-gradient(
+          135deg,
+          rgba(33, 150, 243, 0.15),
+          rgba(33, 150, 243, 0.08)
+        );
+        transform: translateY(-1px);
+      }
+
+      .mode-toggle {
+        display: flex;
+        gap: 10px;
+      }
+
+      .mode-btn {
+        padding: 6px 12px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        background: transparent;
+        color: white;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 500;
+        transition: all 0.3s;
+      }
+
+      .mode-btn.active {
+        background: white;
+        color: #ff6b35;
+        border-color: white;
+      }
+
+      .mode-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>💬 阿里巴巴国际站 - 聊天界面</h1>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="buyer-mode">👤 Buyer Mode</button>
+        <button class="mode-btn" id="seller-mode">🏪 Seller Mode</button>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div id="chat-messages">
+        <!-- Messages will be loaded here -->
+      </div>
+
+      <div class="input-container">
+        <div class="suggestions-container" id="suggestions-container">
+          <!-- AI suggestions will appear here -->
+        </div>
+
+        <div class="input-row">
+          <textarea
+            id="chat-input"
+            placeholder="输入消息... (Type your message...)"
+            rows="1"
+          ></textarea>
+          <button class="send-btn" id="send-btn">发送</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global object for extension communication
+      window.chatDemo = {
+        showSuggestions: function (suggestions) {
+          const container = document.getElementById("suggestions-container");
+          container.innerHTML = "";
+
+          if (suggestions && suggestions.length > 0) {
+            suggestions.forEach((suggestion, index) => {
+              const item = document.createElement("div");
+              item.className = "suggestion-item";
+              item.textContent = suggestion;
+              item.onclick = () => {
+                document.getElementById("chat-input").value = suggestion;
+                container.style.display = "none";
+              };
+              container.appendChild(item);
+            });
+            container.style.display = "block";
+          } else {
+            container.style.display = "none";
+          }
+        },
+      };
+
+      // Current mode: 'buyer' or 'seller'
+      let currentMode = "buyer";
+
+      // Load messages from localStorage
+      function loadMessages() {
+        const messages = JSON.parse(
+          localStorage.getItem("chatMessages") || "[]"
+        );
+        const container = document.getElementById("chat-messages");
+
+        messages.forEach((msg) => {
+          addMessageToDOM(msg.text, msg.type, msg.timestamp, false);
+        });
+
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+      }
+
+      // Save messages to localStorage
+      function saveMessages() {
+        const messages = [];
+        const messageElements = document.querySelectorAll(".message");
+
+        messageElements.forEach((el) => {
+          const content = el.querySelector(".message-content");
+          // Get only the original message text, excluding translation overlays
+          let text = "";
+          if (content) {
+            // Get the first text node (original message) and ignore overlay elements
+            const childNodes = Array.from(content.childNodes);
+            const textNode = childNodes.find(
+              (node) => node.nodeType === Node.TEXT_NODE
+            );
+            if (textNode) {
+              text = textNode.textContent.trim();
+            } else if (childNodes.length > 0) {
+              // Fallback: get text from first child if no direct text node
+              text = childNodes[0].textContent
+                ? childNodes[0].textContent.trim()
+                : "";
+            }
+          }
+
+          const type = el.classList.contains("seller-message")
+            ? "seller"
+            : "user";
+          const timeEl = el.querySelector(".message-time");
+          const timestamp = timeEl
+            ? timeEl.textContent
+            : new Date().toLocaleTimeString();
+
+          messages.push({ text, type, timestamp });
+        });
+
+        localStorage.setItem("chatMessages", JSON.stringify(messages));
+      }
+
+      // Add message to DOM
+      function addMessageToDOM(text, type, timestamp = null, save = true) {
+        const container = document.getElementById("chat-messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${type}-message`;
+
+        const avatar = document.createElement("div");
+        avatar.className = `message-avatar ${type}-avatar`;
+        avatar.textContent = type === "seller" ? "卖" : "买";
+
+        const content = document.createElement("div");
+        content.className = `message-content ${type}-msg`;
+        content.textContent = text;
+
+        const time = document.createElement("div");
+        time.className = "message-time";
+        time.textContent = timestamp || new Date().toLocaleTimeString();
+
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(content);
+        messageDiv.appendChild(time);
+
+        container.appendChild(messageDiv);
+
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+
+        if (save) {
+          saveMessages();
+        }
+      }
+
+      // Initialize with sample messages
+      function initializeSampleMessages() {
+        const sampleMessages = [
+          {
+            text: "您好！我想咨询一下这款手机壳的价格和起订量。",
+            type: "user",
+          },
+          {
+            text: "您好！这款手机壳单价是2.5元，起订量是500个。价格包含运费到您指定的港口。",
+            type: "seller",
+          },
+          {
+            text: "500个起订量有点多，我能先订100个试试吗？",
+            type: "user",
+          },
+          {
+            text: "100个可以接受，但单价会调整到3.2元。我们的产品质量很好，客户反馈都很好。",
+            type: "seller",
+          },
+          {
+            text: "那我考虑一下，麻烦发一下详细的产品规格和样品图片。",
+            type: "user",
+          },
+          {
+            text: "好的，我马上发规格表和样品图给您。我们的材质是环保TPU，表面磨砂处理，不易滑手。",
+            type: "seller",
+          },
+        ];
+
+        sampleMessages.forEach((msg) => {
+          addMessageToDOM(msg.text, msg.type, null, false);
+        });
+
+        saveMessages();
+      }
+
+      // Send message
+      function sendMessage() {
+        const input = document.getElementById("chat-input");
+        const text = input.value.trim();
+
+        if (text) {
+          // Map 'buyer' mode to 'user' for the function call
+          const messageType = currentMode === "buyer" ? "user" : "seller";
+          addMessageToDOM(text, messageType);
+          input.value = "";
+          input.style.height = "auto";
+
+          // Hide suggestions
+          document.getElementById("suggestions-container").style.display =
+            "none";
+        }
+      }
+
+      // Mode toggle functionality
+      function setMode(mode) {
+        currentMode = mode;
+        const buyerBtn = document.getElementById("buyer-mode");
+        const sellerBtn = document.getElementById("seller-mode");
+        const input = document.getElementById("chat-input");
+
+        if (mode === "buyer") {
+          buyerBtn.classList.add("active");
+          sellerBtn.classList.remove("active");
+          input.placeholder = "输入消息... (Type your message...)";
+        } else {
+          sellerBtn.classList.add("active");
+          buyerBtn.classList.remove("active");
+          input.placeholder =
+            "输入中文消息... (Type Chinese seller message...)";
+        }
+      }
+
+      // Event listeners
+      document.addEventListener("DOMContentLoaded", function () {
+        // Load existing messages or initialize sample
+        const existingMessages = localStorage.getItem("chatMessages");
+        if (existingMessages && JSON.parse(existingMessages).length > 0) {
+          loadMessages();
+        } else {
+          initializeSampleMessages();
+        }
+
+        // Send button
+        document
+          .getElementById("send-btn")
+          .addEventListener("click", sendMessage);
+
+        // Enter key
+        document
+          .getElementById("chat-input")
+          .addEventListener("keydown", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          });
+
+        // Auto-resize textarea
+        document
+          .getElementById("chat-input")
+          .addEventListener("input", function () {
+            this.style.height = "auto";
+            this.style.height = Math.min(this.scrollHeight, 120) + "px";
+          });
+
+        // Mode toggle buttons
+        document
+          .getElementById("buyer-mode")
+          .addEventListener("click", () => setMode("buyer"));
+        document
+          .getElementById("seller-mode")
+          .addEventListener("click", () => setMode("seller"));
+      });
+    </script>
+  </body>
+</html>
