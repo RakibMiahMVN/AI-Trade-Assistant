@@ -1161,6 +1161,7 @@ function injectTranslateButton(inputField) {
   inputWrapper.appendChild(inputField);
   inputField.style.flex = "1";
   inputField.style.paddingRight = "90px";
+  inputField.style.overflow = "hidden";
 
   // Insert buttons and suggestions container into the wrapper
   inputWrapper.appendChild(suggestBtn);
