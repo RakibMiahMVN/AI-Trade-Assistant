@@ -51,12 +51,12 @@ document.head.appendChild(style);
 // Create and add a floating summary button to the right center of the screen
 function addSummaryButton() {
   // Check if button already exists
-  if (document.getElementById('ai-summary-button')) return;
-  
-  const summaryButton = document.createElement('button');
-  summaryButton.id = 'ai-summary-button';
-  summaryButton.textContent = '📝';
-  summaryButton.title = 'Generate AI conversation summary';
+  if (document.getElementById("ai-summary-button")) return;
+
+  const summaryButton = document.createElement("button");
+  summaryButton.id = "ai-summary-button";
+  summaryButton.textContent = "📝";
+  summaryButton.title = "Generate AI conversation summary";
   summaryButton.style.cssText = `
     position: fixed;
     right: 20px;
@@ -77,33 +77,33 @@ function addSummaryButton() {
     justify-content: center;
     transition: all 0.3s ease;
   `;
-  
+
   // Add hover effects
   summaryButton.onmouseover = () => {
-    summaryButton.style.transform = 'translateY(-50%) scale(1.1)';
-    summaryButton.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.4)';
+    summaryButton.style.transform = "translateY(-50%) scale(1.1)";
+    summaryButton.style.boxShadow = "0 5px 15px rgba(0, 0, 0, 0.4)";
   };
-  
+
   summaryButton.onmouseout = () => {
-    summaryButton.style.transform = 'translateY(-50%)';
-    summaryButton.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.3)';
+    summaryButton.style.transform = "translateY(-50%)";
+    summaryButton.style.boxShadow = "0 3px 10px rgba(0, 0, 0, 0.3)";
   };
-  
+
   // Add click event
   summaryButton.onclick = showSummaryModal;
-  
+
   document.body.appendChild(summaryButton);
 }
 
 // Create and add a floating review button to the right center of the screen
 function addReviewButton() {
   // Check if button already exists
-  if (document.getElementById('seller-review-button')) return;
-  
-  const reviewButton = document.createElement('button');
-  reviewButton.id = 'seller-review-button';
-  reviewButton.textContent = '⭐';
-  reviewButton.title = 'Rate this seller as a buyer';
+  if (document.getElementById("seller-review-button")) return;
+
+  const reviewButton = document.createElement("button");
+  reviewButton.id = "seller-review-button";
+  reviewButton.textContent = "⭐";
+  reviewButton.title = "Rate this seller as a buyer";
   reviewButton.style.cssText = `
     position: fixed;
     right: 20px;
@@ -124,24 +124,24 @@ function addReviewButton() {
     justify-content: center;
     transition: all 0.3s ease;
   `;
-  
+
   // Add hover effects
   reviewButton.onmouseover = () => {
-    reviewButton.style.transform = 'translateY(-50%) scale(1.1)';
-    reviewButton.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.4)';
+    reviewButton.style.transform = "translateY(-50%) scale(1.1)";
+    reviewButton.style.boxShadow = "0 5px 15px rgba(0, 0, 0, 0.4)";
   };
-  
+
   reviewButton.onmouseout = () => {
-    reviewButton.style.transform = 'translateY(-50%)';
-    reviewButton.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.3)';
+    reviewButton.style.transform = "translateY(-50%)";
+    reviewButton.style.boxShadow = "0 3px 10px rgba(0, 0, 0, 0.3)";
   };
-  
+
   // Add click event
   reviewButton.onclick = () => {
     // Check if there are any reviews already
     const allReviews = getAllReviews();
     const sellerNames = Object.keys(allReviews);
-    
+
     if (sellerNames.length > 0) {
       // If reviews exist, show reviews list
       showReviewsList();
@@ -150,7 +150,7 @@ function addReviewButton() {
       showReviewForm();
     }
   };
-  
+
   document.body.appendChild(reviewButton);
 }
 
@@ -161,14 +161,14 @@ addReviewButton();
 // Create and display the summary modal
 function showSummaryModal() {
   // Check if modal already exists and remove it
-  const existingModal = document.getElementById('ai-summary-modal');
+  const existingModal = document.getElementById("ai-summary-modal");
   if (existingModal) {
     existingModal.remove();
   }
-  
+
   // Create modal container
-  const modal = document.createElement('div');
-  modal.id = 'ai-summary-modal';
+  const modal = document.createElement("div");
+  modal.id = "ai-summary-modal";
   modal.style.cssText = `
     position: fixed;
     top: 0;
@@ -182,9 +182,9 @@ function showSummaryModal() {
     z-index: 10001;
     animation: fadeIn 0.3s ease;
   `;
-  
+
   // Create modal content
-  const modalContent = document.createElement('div');
+  const modalContent = document.createElement("div");
   modalContent.style.cssText = `
     background-color: white;
     width: 80%;
@@ -197,9 +197,9 @@ function showSummaryModal() {
     border: 1px solid rgba(33, 150, 243, 0.3);
     background: linear-gradient(to bottom, #ffffff, #f7f9fc);
   `;
-  
+
   // Create header
-  const header = document.createElement('div');
+  const header = document.createElement("div");
   header.style.cssText = `
     display: flex;
     justify-content: space-between;
@@ -208,10 +208,11 @@ function showSummaryModal() {
     border-bottom: 2px solid rgba(33, 150, 243, 0.2);
     padding-bottom: 15px;
   `;
-  
+
   // Add title
-  const title = document.createElement('h3');
-  title.innerHTML = '📝 <span style="background: linear-gradient(45deg, #2196F3, #3F51B5); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI Conversation Summary</span>';
+  const title = document.createElement("h3");
+  title.innerHTML =
+    '📝 <span style="background: linear-gradient(45deg, #2196F3, #3F51B5); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI Conversation Summary</span>';
   title.style.cssText = `
     margin: 0;
     font-size: 20px;
@@ -220,20 +221,20 @@ function showSummaryModal() {
     align-items: center;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   `;
-  
+
   // Create a container for the buttons
-  const buttonsContainer = document.createElement('div');
+  const buttonsContainer = document.createElement("div");
   buttonsContainer.style.cssText = `
     display: flex;
     align-items: center;
     gap: 10px;
   `;
-  
+
   // Add copy button
-  const copyButton = document.createElement('button');
-  copyButton.innerHTML = '📋';
-  copyButton.title = 'Copy summary to clipboard';
-  copyButton.id = 'ai-summary-copy-btn';
+  const copyButton = document.createElement("button");
+  copyButton.innerHTML = "📋";
+  copyButton.title = "Copy summary to clipboard";
+  copyButton.id = "ai-summary-copy-btn";
   copyButton.style.cssText = `
     background: linear-gradient(45deg, #4CAF50, #8BC34A);
     border: none;
@@ -249,26 +250,26 @@ function showSummaryModal() {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     transition: all 0.2s ease;
   `;
-  
+
   // Add hover effects for copy button
   copyButton.onmouseover = () => {
-    copyButton.style.transform = 'scale(1.1)';
-    copyButton.style.boxShadow = '0 3px 7px rgba(0,0,0,0.3)';
+    copyButton.style.transform = "scale(1.1)";
+    copyButton.style.boxShadow = "0 3px 7px rgba(0,0,0,0.3)";
   };
-  
+
   copyButton.onmouseout = () => {
-    copyButton.style.transform = 'scale(1)';
-    copyButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    copyButton.style.transform = "scale(1)";
+    copyButton.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
   };
-  
+
   // Add click event for copy button
   copyButton.onclick = () => {
     copySummaryToClipboard();
   };
-  
+
   // Add close button
-  const closeButton = document.createElement('button');
-  closeButton.innerHTML = '✕';
+  const closeButton = document.createElement("button");
+  closeButton.innerHTML = "✕";
   closeButton.style.cssText = `
     background: linear-gradient(45deg, #ff6b35, #ff9d5c);
     border: none;
@@ -284,24 +285,24 @@ function showSummaryModal() {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     transition: all 0.2s ease;
   `;
-  
+
   // Add hover effects for close button
   closeButton.onmouseover = () => {
-    closeButton.style.transform = 'scale(1.1)';
-    closeButton.style.boxShadow = '0 3px 7px rgba(0,0,0,0.3)';
+    closeButton.style.transform = "scale(1.1)";
+    closeButton.style.boxShadow = "0 3px 7px rgba(0,0,0,0.3)";
   };
-  
+
   closeButton.onmouseout = () => {
-    closeButton.style.transform = 'scale(1)';
-    closeButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    closeButton.style.transform = "scale(1)";
+    closeButton.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
   };
   closeButton.onclick = () => {
     modal.remove();
   };
-  
+
   // Add content area
-  const contentArea = document.createElement('div');
-  contentArea.id = 'ai-summary-content';
+  const contentArea = document.createElement("div");
+  contentArea.id = "ai-summary-content";
   contentArea.style.cssText = `
     padding: 15px;
     margin-bottom: 20px;
@@ -316,9 +317,9 @@ function showSummaryModal() {
     scrollbar-width: thin;
     scrollbar-color: #2196F3 #f1f1f1;
   `;
-  
+
   // Add custom scrollbar styling
-  const scrollbarStyle = document.createElement('style');
+  const scrollbarStyle = document.createElement("style");
   scrollbarStyle.textContent = `
     #ai-summary-content::-webkit-scrollbar {
       width: 8px;
@@ -339,9 +340,9 @@ function showSummaryModal() {
     }
   `;
   document.head.appendChild(scrollbarStyle);
-  
+
   // Add enhanced loading spinner initially
-  const loadingSpinner = document.createElement('div');
+  const loadingSpinner = document.createElement("div");
   loadingSpinner.style.cssText = `
     display: flex;
     flex-direction: column;
@@ -423,7 +424,7 @@ function showSummaryModal() {
     </style>
   `;
   contentArea.appendChild(loadingSpinner);
-  
+
   // Assemble modal
   header.appendChild(title);
   buttonsContainer.appendChild(copyButton);
@@ -432,10 +433,10 @@ function showSummaryModal() {
   modalContent.appendChild(header);
   modalContent.appendChild(contentArea);
   modal.appendChild(modalContent);
-  
+
   // Add modal to document
   document.body.appendChild(modal);
-  
+
   // Generate summary
   generateConversationSummary();
 }
@@ -444,16 +445,16 @@ function showSummaryModal() {
 function showReviewForm() {
   // Extract seller name from the conversation
   let sellerName = extractSellerName() || "Seller";
-  
+
   // Check if modal already exists and remove it
-  const existingModal = document.getElementById('seller-review-modal');
+  const existingModal = document.getElementById("seller-review-modal");
   if (existingModal) {
     existingModal.remove();
   }
-  
+
   // Create modal container with backdrop
-  const modal = document.createElement('div');
-  modal.id = 'seller-review-modal';
+  const modal = document.createElement("div");
+  modal.id = "seller-review-modal";
   modal.style.cssText = `
     position: fixed;
     top: 0;
@@ -467,9 +468,9 @@ function showReviewForm() {
     z-index: 10002;
     animation: fadeIn 0.3s ease;
   `;
-  
+
   // Create modal content
-  const modalContent = document.createElement('div');
+  const modalContent = document.createElement("div");
   modalContent.style.cssText = `
     background: linear-gradient(to bottom, #ffffff, #f7f9fc);
     width: 90%;
@@ -481,9 +482,9 @@ function showReviewForm() {
     animation: scaleIn 0.3s ease;
     border: 1px solid rgba(255, 193, 7, 0.3);
   `;
-  
+
   // Create header
-  const header = document.createElement('div');
+  const header = document.createElement("div");
   header.style.cssText = `
     display: flex;
     justify-content: space-between;
@@ -492,9 +493,9 @@ function showReviewForm() {
     border-bottom: 2px solid rgba(255, 193, 7, 0.2);
     padding-bottom: 15px;
   `;
-  
+
   // Add title
-  const title = document.createElement('h3');
+  const title = document.createElement("h3");
   title.innerHTML = `⭐ <span style="background: linear-gradient(45deg, #FFC107, #FF9800); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Rate Seller: ${sellerName}</span>`;
   title.style.cssText = `
     margin: 0;
@@ -504,10 +505,10 @@ function showReviewForm() {
     align-items: center;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   `;
-  
+
   // Add close button
-  const closeButton = document.createElement('button');
-  closeButton.innerHTML = '✕';
+  const closeButton = document.createElement("button");
+  closeButton.innerHTML = "✕";
   closeButton.style.cssText = `
     background: linear-gradient(45deg, #ff6b35, #ff9d5c);
     border: none;
@@ -524,16 +525,17 @@ function showReviewForm() {
     transition: all 0.2s ease;
   `;
   closeButton.onclick = () => modal.remove();
-  
+
   // Create form content
-  const formContainer = document.createElement('div');
+  const formContainer = document.createElement("div");
   formContainer.style.cssText = `
     padding: 10px 0;
   `;
-  
+
   // Add buyer review note
-  const buyerNote = document.createElement('div');
-  buyerNote.textContent = 'As a buyer, how would you rate your experience with this seller?';
+  const buyerNote = document.createElement("div");
+  buyerNote.textContent =
+    "As a buyer, how would you rate your experience with this seller?";
   buyerNote.style.cssText = `
     margin-bottom: 15px;
     color: #666;
@@ -541,100 +543,101 @@ function showReviewForm() {
     font-style: italic;
   `;
   formContainer.appendChild(buyerNote);
-  
+
   // Add rating selector
-  const ratingContainer = document.createElement('div');
+  const ratingContainer = document.createElement("div");
   ratingContainer.style.cssText = `
     margin-bottom: 20px;
   `;
-  
-  const ratingLabel = document.createElement('div');
-  ratingLabel.textContent = 'Rating:';
+
+  const ratingLabel = document.createElement("div");
+  ratingLabel.textContent = "Rating:";
   ratingLabel.style.cssText = `
     font-weight: 600;
     margin-bottom: 10px;
     font-size: 16px;
     color: #555;
   `;
-  
+
   // Create star rating system
-  const starsContainer = document.createElement('div');
+  const starsContainer = document.createElement("div");
   starsContainer.style.cssText = `
     display: flex;
     gap: 10px;
     font-size: 30px;
   `;
-  
+
   let selectedRating = 0;
   const starElements = [];
-  
+
   for (let i = 1; i <= 5; i++) {
-    const star = document.createElement('span');
-    star.textContent = '☆';  // Empty star
+    const star = document.createElement("span");
+    star.textContent = "☆"; // Empty star
     star.dataset.rating = i;
     star.style.cssText = `
       cursor: pointer;
       color: #ddd;
       transition: all 0.2s ease;
     `;
-    
+
     // Hover effect
     star.onmouseover = () => {
       // Fill stars up to this one
       for (let j = 0; j < i; j++) {
-        starElements[j].textContent = '★';
-        starElements[j].style.color = '#FFC107';
+        starElements[j].textContent = "★";
+        starElements[j].style.color = "#FFC107";
       }
     };
-    
+
     star.onmouseout = () => {
       // Reset to selected rating
       starElements.forEach((s, index) => {
         if (index < selectedRating) {
-          s.textContent = '★';
-          s.style.color = '#FFC107';
+          s.textContent = "★";
+          s.style.color = "#FFC107";
         } else {
-          s.textContent = '☆';
-          s.style.color = '#ddd';
+          s.textContent = "☆";
+          s.style.color = "#ddd";
         }
       });
     };
-    
+
     // Click to set rating
     star.onclick = () => {
       selectedRating = i;
       starElements.forEach((s, index) => {
         if (index < selectedRating) {
-          s.textContent = '★';
-          s.style.color = '#FFC107';
+          s.textContent = "★";
+          s.style.color = "#FFC107";
         } else {
-          s.textContent = '☆';
-          s.style.color = '#ddd';
+          s.textContent = "☆";
+          s.style.color = "#ddd";
         }
       });
     };
-    
+
     starsContainer.appendChild(star);
     starElements.push(star);
   }
-  
+
   // Add comment field
-  const commentContainer = document.createElement('div');
+  const commentContainer = document.createElement("div");
   commentContainer.style.cssText = `
     margin-bottom: 20px;
   `;
-  
-  const commentLabel = document.createElement('div');
-  commentLabel.textContent = 'Comments:';
+
+  const commentLabel = document.createElement("div");
+  commentLabel.textContent = "Comments:";
   commentLabel.style.cssText = `
     font-weight: 600;
     margin-bottom: 10px;
     font-size: 16px;
     color: #555;
   `;
-  
-  const commentTextarea = document.createElement('textarea');
-  commentTextarea.placeholder = 'Share your experience as a buyer with this seller...';
+
+  const commentTextarea = document.createElement("textarea");
+  commentTextarea.placeholder =
+    "Share your experience as a buyer with this seller...";
   commentTextarea.style.cssText = `
     width: 100%;
     padding: 12px;
@@ -648,26 +651,26 @@ function showReviewForm() {
     box-sizing: border-box;
     transition: border 0.3s ease;
   `;
-  
+
   commentTextarea.onfocus = () => {
-    commentTextarea.style.borderColor = '#FFC107';
-    commentTextarea.style.boxShadow = '0 0 0 2px rgba(255, 193, 7, 0.2)';
+    commentTextarea.style.borderColor = "#FFC107";
+    commentTextarea.style.boxShadow = "0 0 0 2px rgba(255, 193, 7, 0.2)";
   };
-  
+
   commentTextarea.onblur = () => {
-    commentTextarea.style.borderColor = '#ddd';
-    commentTextarea.style.boxShadow = 'none';
+    commentTextarea.style.borderColor = "#ddd";
+    commentTextarea.style.boxShadow = "none";
   };
-  
+
   // Add seller name field (hidden but used for saving)
-  const sellerNameInput = document.createElement('input');
-  sellerNameInput.type = 'hidden';
-  sellerNameInput.id = 'review-seller-name';
+  const sellerNameInput = document.createElement("input");
+  sellerNameInput.type = "hidden";
+  sellerNameInput.id = "review-seller-name";
   sellerNameInput.value = sellerName;
-  
+
   // Add submit button
-  const submitButton = document.createElement('button');
-  submitButton.textContent = 'Save Review';
+  const submitButton = document.createElement("button");
+  submitButton.textContent = "Save Review";
   submitButton.style.cssText = `
     background: linear-gradient(45deg, #FFC107, #FF9800);
     color: white;
@@ -682,50 +685,54 @@ function showReviewForm() {
     transition: all 0.2s ease;
     box-shadow: 0 3px 5px rgba(0,0,0,0.1);
   `;
-  
+
   submitButton.onmouseover = () => {
-    submitButton.style.transform = 'translateY(-2px)';
-    submitButton.style.boxShadow = '0 5px 10px rgba(0,0,0,0.2)';
+    submitButton.style.transform = "translateY(-2px)";
+    submitButton.style.boxShadow = "0 5px 10px rgba(0,0,0,0.2)";
   };
-  
+
   submitButton.onmouseout = () => {
-    submitButton.style.transform = 'translateY(0)';
-    submitButton.style.boxShadow = '0 3px 5px rgba(0,0,0,0.1)';
+    submitButton.style.transform = "translateY(0)";
+    submitButton.style.boxShadow = "0 3px 5px rgba(0,0,0,0.1)";
   };
-  
+
   // Add submit event
   submitButton.onclick = () => {
     if (selectedRating === 0) {
-      alert('Please select a rating.');
+      alert("Please select a rating.");
       return;
     }
-    
-    const success = saveReview(sellerName, selectedRating, commentTextarea.value);
-    
+
+    const success = saveReview(
+      sellerName,
+      selectedRating,
+      commentTextarea.value
+    );
+
     if (success) {
       // Show success message
-      showCopyNotification('Review saved successfully!', '#4CAF50');
-      
+      showCopyNotification("Review saved successfully!", "#4CAF50");
+
       // Reset form for additional reviews
       selectedRating = 0;
-      commentTextarea.value = '';
-      
+      commentTextarea.value = "";
+
       // Reset stars to empty
-      starElements.forEach(s => {
-        s.textContent = '☆';
-        s.style.color = '#ddd';
+      starElements.forEach((s) => {
+        s.textContent = "☆";
+        s.style.color = "#ddd";
       });
-      
+
       // Show the reviews list below the form
       showReviewsInModal(sellerName);
     } else {
-      showCopyNotification('Failed to save review', '#F44336');
+      showCopyNotification("Failed to save review", "#F44336");
     }
   };
-  
+
   // Show previous reviews button
-  const viewReviewsButton = document.createElement('button');
-  viewReviewsButton.textContent = 'View All Reviews';
+  const viewReviewsButton = document.createElement("button");
+  viewReviewsButton.textContent = "View All Reviews";
   viewReviewsButton.style.cssText = `
     background: none;
     border: 2px solid #FFC107;
@@ -740,36 +747,36 @@ function showReviewForm() {
     margin-top: 15px;
     transition: all 0.2s ease;
   `;
-  
+
   viewReviewsButton.onmouseover = () => {
-    viewReviewsButton.style.background = 'rgba(255, 193, 7, 0.1)';
+    viewReviewsButton.style.background = "rgba(255, 193, 7, 0.1)";
   };
-  
+
   viewReviewsButton.onmouseout = () => {
-    viewReviewsButton.style.background = 'none';
+    viewReviewsButton.style.background = "none";
   };
-  
+
   viewReviewsButton.onclick = () => {
     modal.remove();
     showReviewsList();
   };
-  
+
   // Assemble the form
   ratingContainer.appendChild(ratingLabel);
   ratingContainer.appendChild(starsContainer);
-  
+
   commentContainer.appendChild(commentLabel);
   commentContainer.appendChild(commentTextarea);
-  
+
   formContainer.appendChild(ratingContainer);
   formContainer.appendChild(commentContainer);
   formContainer.appendChild(sellerNameInput);
   formContainer.appendChild(submitButton);
   formContainer.appendChild(viewReviewsButton);
-  
+
   // Create reviews container for displaying reviews within the modal
-  const reviewsContainer = document.createElement('div');
-  reviewsContainer.id = 'modal-reviews-container';
+  const reviewsContainer = document.createElement("div");
+  reviewsContainer.id = "modal-reviews-container";
   reviewsContainer.style.cssText = `
     margin-top: 25px;
     max-height: 300px;
@@ -780,9 +787,9 @@ function showReviewForm() {
     padding-top: 15px;
     display: none;
   `;
-  
+
   // Add scrollbar styling
-  const reviewsScrollStyle = document.createElement('style');
+  const reviewsScrollStyle = document.createElement("style");
   reviewsScrollStyle.textContent = `
     #modal-reviews-container::-webkit-scrollbar {
       width: 6px;
@@ -799,75 +806,77 @@ function showReviewForm() {
     }
   `;
   document.head.appendChild(reviewsScrollStyle);
-  
+
   // Assemble the modal
   header.appendChild(title);
   header.appendChild(closeButton);
-  
+
   modalContent.appendChild(header);
   modalContent.appendChild(formContainer);
   modalContent.appendChild(reviewsContainer);
-  
+
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
 }
 
 // Function to show reviews directly in the review modal
 function showReviewsInModal(sellerName) {
-  const reviewsContainer = document.getElementById('modal-reviews-container');
+  const reviewsContainer = document.getElementById("modal-reviews-container");
   if (!reviewsContainer) return;
-  
+
   // Get reviews for this seller
   const reviews = getSellerReviews(sellerName);
-  
+
   // Clear container and show it
-  reviewsContainer.innerHTML = '';
-  reviewsContainer.style.display = 'block';
-  
+  reviewsContainer.innerHTML = "";
+  reviewsContainer.style.display = "block";
+
   // Add header
-  const reviewsHeader = document.createElement('div');
+  const reviewsHeader = document.createElement("div");
   reviewsHeader.style.cssText = `
     margin-bottom: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   `;
-  
-  const reviewsTitle = document.createElement('h4');
-  reviewsTitle.textContent = 'Recent Reviews';
+
+  const reviewsTitle = document.createElement("h4");
+  reviewsTitle.textContent = "Recent Reviews";
   reviewsTitle.style.cssText = `
     margin: 0;
     font-size: 18px;
     color: #333;
   `;
-  
-  const reviewCount = document.createElement('span');
-  reviewCount.textContent = `${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`;
+
+  const reviewCount = document.createElement("span");
+  reviewCount.textContent = `${reviews.length} ${
+    reviews.length === 1 ? "review" : "reviews"
+  }`;
   reviewCount.style.cssText = `
     color: #666;
     font-size: 14px;
   `;
-  
+
   reviewsHeader.appendChild(reviewsTitle);
   reviewsHeader.appendChild(reviewCount);
   reviewsContainer.appendChild(reviewsHeader);
-  
+
   // No reviews message
   if (reviews.length === 0) {
-    const noReviews = document.createElement('div');
+    const noReviews = document.createElement("div");
     noReviews.style.cssText = `
       text-align: center;
       padding: 20px;
       color: #666;
     `;
-    noReviews.textContent = 'No reviews yet. Be the first to review!';
+    noReviews.textContent = "No reviews yet. Be the first to review!";
     reviewsContainer.appendChild(noReviews);
     return;
   }
-  
+
   // Add reviews
-  reviews.forEach(review => {
-    const reviewItem = document.createElement('div');
+  reviews.forEach((review) => {
+    const reviewItem = document.createElement("div");
     reviewItem.style.cssText = `
       background: white;
       border-radius: 10px;
@@ -876,30 +885,30 @@ function showReviewsInModal(sellerName) {
       border: 1px solid #eee;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     `;
-    
+
     // Rating stars
-    const stars = document.createElement('div');
+    const stars = document.createElement("div");
     stars.style.cssText = `
       color: #FFC107;
       font-size: 18px;
       margin-bottom: 10px;
     `;
-    
+
     for (let i = 1; i <= 5; i++) {
-      stars.innerHTML += i <= review.rating ? '★' : '☆';
+      stars.innerHTML += i <= review.rating ? "★" : "☆";
     }
-    
+
     // Review comment
-    const comment = document.createElement('div');
+    const comment = document.createElement("div");
     comment.style.cssText = `
       color: #333;
       font-size: 14px;
       line-height: 1.5;
     `;
-    comment.textContent = review.comment || 'No comment provided';
-    
+    comment.textContent = review.comment || "No comment provided";
+
     // Review date
-    const date = document.createElement('div');
+    const date = document.createElement("div");
     date.style.cssText = `
       color: #999;
       font-size: 12px;
@@ -907,7 +916,7 @@ function showReviewsInModal(sellerName) {
       text-align: right;
     `;
     date.textContent = new Date(review.date).toLocaleString();
-    
+
     reviewItem.appendChild(stars);
     reviewItem.appendChild(comment);
     reviewItem.appendChild(date);
@@ -918,11 +927,13 @@ function showReviewsInModal(sellerName) {
 // Function to extract seller name from conversation
 function extractSellerName() {
   // Try to find seller name in the conversation
-  const sellerMessages = document.querySelectorAll('.seller-msg');
-  
+  const sellerMessages = document.querySelectorAll(".seller-msg");
+
   // Check for seller name in page metadata (usually present in chat windows)
-  const possibleNameElements = document.querySelectorAll('.seller-name, .chat-participant, .merchant-name, .trader-name');
-  
+  const possibleNameElements = document.querySelectorAll(
+    ".seller-name, .chat-participant, .merchant-name, .trader-name"
+  );
+
   if (possibleNameElements.length > 0) {
     for (const element of possibleNameElements) {
       const text = element.textContent.trim();
@@ -931,14 +942,21 @@ function extractSellerName() {
       }
     }
   }
-  
+
   // Check message headers for seller identification
-  const messageHeaders = document.querySelectorAll('.message-header, .chat-header');
+  const messageHeaders = document.querySelectorAll(
+    ".message-header, .chat-header"
+  );
   for (const header of messageHeaders) {
-    if (header.textContent.includes('seller') || header.textContent.includes('merchant')) {
+    if (
+      header.textContent.includes("seller") ||
+      header.textContent.includes("merchant")
+    ) {
       const text = header.textContent.trim();
       // Extract name using regex - look for patterns like "Seller: Name" or "Name (Seller)"
-      const nameMatch = text.match(/(?:Seller|Merchant):\s*([^:]+)|([^(]+)\s+\((?:Seller|Merchant)\)/i);
+      const nameMatch = text.match(
+        /(?:Seller|Merchant):\s*([^:]+)|([^(]+)\s+\((?:Seller|Merchant)\)/i
+      );
       if (nameMatch) {
         const name = (nameMatch[1] || nameMatch[2]).trim();
         if (name && name.length > 0) {
@@ -947,10 +965,13 @@ function extractSellerName() {
       }
     }
   }
-  
+
   // Use the page title as fallback if it contains likely seller information
   const pageTitle = document.title;
-  if (pageTitle && (pageTitle.includes('chat') || pageTitle.includes('message'))) {
+  if (
+    pageTitle &&
+    (pageTitle.includes("chat") || pageTitle.includes("message"))
+  ) {
     const parts = pageTitle.split(/[|:—-]/);
     if (parts.length > 1) {
       const potentialName = parts[0].trim();
@@ -959,10 +980,16 @@ function extractSellerName() {
       }
     }
   }
-  
+
   // For demo.html and testing purposes, generate a random seller name
   // In real implementation this would be replaced with actual seller info
-  const demoNames = ["TradeMaster", "GlobalSupply", "SunriseTrade", "QualityGoods", "FastShip"];
+  const demoNames = [
+    "TradeMaster",
+    "GlobalSupply",
+    "SunriseTrade",
+    "QualityGoods",
+    "FastShip",
+  ];
   const randomIndex = Math.floor(Math.random() * demoNames.length);
   return demoNames[randomIndex];
 }
@@ -970,41 +997,46 @@ function extractSellerName() {
 // Function to copy the summary to clipboard
 function copySummaryToClipboard() {
   // Find the summary container
-  const summaryContainer = document.querySelector('.summary-container');
+  const summaryContainer = document.querySelector(".summary-container");
   if (!summaryContainer) return;
-  
+
   try {
     // Extract text from the summary container (removing HTML tags)
-    const summaryText = summaryContainer.innerText || summaryContainer.textContent;
-    
+    const summaryText =
+      summaryContainer.innerText || summaryContainer.textContent;
+
     // Use the Clipboard API to copy the text
-    navigator.clipboard.writeText(summaryText).then(() => {
-      // Show success notification
-      showCopyNotification('Summary copied to clipboard! 📋', '#4CAF50');
-      
-      // Change the copy button to show success
-      const copyButton = document.getElementById('ai-summary-copy-btn');
-      if (copyButton) {
-        const originalInnerHTML = copyButton.innerHTML;
-        const originalBackground = copyButton.style.background;
-        
-        // Change to checkmark and success color
-        copyButton.innerHTML = '✓';
-        copyButton.style.background = 'linear-gradient(45deg, #4CAF50, #4CAF50)';
-        
-        // Revert after a delay
-        setTimeout(() => {
-          copyButton.innerHTML = originalInnerHTML;
-          copyButton.style.background = originalBackground;
-        }, 2000);
-      }
-    }).catch(err => {
-      console.error('Failed to copy text: ', err);
-      showCopyNotification('Failed to copy summary', '#F44336');
-    });
+    navigator.clipboard
+      .writeText(summaryText)
+      .then(() => {
+        // Show success notification
+        showCopyNotification("Summary copied to clipboard! 📋", "#4CAF50");
+
+        // Change the copy button to show success
+        const copyButton = document.getElementById("ai-summary-copy-btn");
+        if (copyButton) {
+          const originalInnerHTML = copyButton.innerHTML;
+          const originalBackground = copyButton.style.background;
+
+          // Change to checkmark and success color
+          copyButton.innerHTML = "✓";
+          copyButton.style.background =
+            "linear-gradient(45deg, #4CAF50, #4CAF50)";
+
+          // Revert after a delay
+          setTimeout(() => {
+            copyButton.innerHTML = originalInnerHTML;
+            copyButton.style.background = originalBackground;
+          }, 2000);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to copy text: ", err);
+        showCopyNotification("Failed to copy summary", "#F44336");
+      });
   } catch (error) {
-    console.error('Copy error:', error);
-    showCopyNotification('Failed to copy summary', '#F44336');
+    console.error("Copy error:", error);
+    showCopyNotification("Failed to copy summary", "#F44336");
   }
 }
 
@@ -1012,30 +1044,30 @@ function copySummaryToClipboard() {
 function saveReview(sellerName, rating, comment) {
   try {
     // Get existing reviews
-    let allReviews = localStorage.getItem('aiTradeAssistantReviews');
+    let allReviews = localStorage.getItem("aiTradeAssistantReviews");
     allReviews = allReviews ? JSON.parse(allReviews) : {};
-    
+
     // Initialize seller reviews if not exists
     if (!allReviews[sellerName]) {
       allReviews[sellerName] = [];
     }
-    
+
     // Add new review with timestamp
     const newReview = {
       rating: rating,
       comment: comment,
       date: new Date().toISOString(),
     };
-    
+
     // Add to beginning of array for most recent first
     allReviews[sellerName].unshift(newReview);
-    
+
     // Save back to localStorage
-    localStorage.setItem('aiTradeAssistantReviews', JSON.stringify(allReviews));
-    
+    localStorage.setItem("aiTradeAssistantReviews", JSON.stringify(allReviews));
+
     return true;
   } catch (error) {
-    console.error('Error saving review:', error);
+    console.error("Error saving review:", error);
     return false;
   }
 }
@@ -1043,10 +1075,10 @@ function saveReview(sellerName, rating, comment) {
 // Function to get all reviews
 function getAllReviews() {
   try {
-    const reviews = localStorage.getItem('aiTradeAssistantReviews');
+    const reviews = localStorage.getItem("aiTradeAssistantReviews");
     return reviews ? JSON.parse(reviews) : {};
   } catch (error) {
-    console.error('Error getting reviews:', error);
+    console.error("Error getting reviews:", error);
     return {};
   }
 }
@@ -1060,9 +1092,9 @@ function getSellerReviews(sellerName) {
 // Function to calculate average rating for a seller
 function getSellerAverageRating(sellerName) {
   const reviews = getSellerReviews(sellerName);
-  
+
   if (reviews.length === 0) return 0;
-  
+
   const sum = reviews.reduce((total, review) => total + review.rating, 0);
   return sum / reviews.length;
 }
@@ -1070,18 +1102,18 @@ function getSellerAverageRating(sellerName) {
 // Function to show the reviews list modal
 function showReviewsList() {
   // Check if modal already exists and remove it
-  const existingModal = document.getElementById('reviews-list-modal');
+  const existingModal = document.getElementById("reviews-list-modal");
   if (existingModal) {
     existingModal.remove();
   }
-  
+
   // Get all reviews
   const allReviews = getAllReviews();
   const sellerNames = Object.keys(allReviews);
-  
+
   // Create modal container with backdrop
-  const modal = document.createElement('div');
-  modal.id = 'reviews-list-modal';
+  const modal = document.createElement("div");
+  modal.id = "reviews-list-modal";
   modal.style.cssText = `
     position: fixed;
     top: 0;
@@ -1095,9 +1127,9 @@ function showReviewsList() {
     z-index: 10002;
     animation: fadeIn 0.3s ease;
   `;
-  
+
   // Create modal content
-  const modalContent = document.createElement('div');
+  const modalContent = document.createElement("div");
   modalContent.style.cssText = `
     background: linear-gradient(to bottom, #ffffff, #f7f9fc);
     width: 90%;
@@ -1112,9 +1144,9 @@ function showReviewsList() {
     display: flex;
     flex-direction: column;
   `;
-  
+
   // Create header
-  const header = document.createElement('div');
+  const header = document.createElement("div");
   header.style.cssText = `
     display: flex;
     justify-content: space-between;
@@ -1123,9 +1155,9 @@ function showReviewsList() {
     border-bottom: 2px solid rgba(255, 193, 7, 0.2);
     padding-bottom: 15px;
   `;
-  
+
   // Add title
-  const title = document.createElement('h3');
+  const title = document.createElement("h3");
   title.innerHTML = `📊 <span style="background: linear-gradient(45deg, #FFC107, #FF9800); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Buyer Reviews of Sellers</span>`;
   title.style.cssText = `
     margin: 0;
@@ -1135,10 +1167,10 @@ function showReviewsList() {
     align-items: center;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   `;
-  
+
   // Add close button
-  const closeButton = document.createElement('button');
-  closeButton.innerHTML = '✕';
+  const closeButton = document.createElement("button");
+  closeButton.innerHTML = "✕";
   closeButton.style.cssText = `
     background: linear-gradient(45deg, #ff6b35, #ff9d5c);
     border: none;
@@ -1155,9 +1187,9 @@ function showReviewsList() {
     transition: all 0.2s ease;
   `;
   closeButton.onclick = () => modal.remove();
-  
+
   // Create tabs container if there are multiple sellers
-  const tabsContainer = document.createElement('div');
+  const tabsContainer = document.createElement("div");
   tabsContainer.style.cssText = `
     display: flex;
     gap: 10px;
@@ -1167,9 +1199,9 @@ function showReviewsList() {
     scrollbar-width: thin;
     scrollbar-color: #FFC107 #f1f1f1;
   `;
-  
+
   // Add custom scrollbar styling for tabs
-  const tabsScrollStyle = document.createElement('style');
+  const tabsScrollStyle = document.createElement("style");
   tabsScrollStyle.textContent = `
     #reviews-list-modal .tabs-container::-webkit-scrollbar {
       height: 6px;
@@ -1186,9 +1218,9 @@ function showReviewsList() {
     }
   `;
   document.head.appendChild(tabsScrollStyle);
-  
+
   // Create content container
-  const contentContainer = document.createElement('div');
+  const contentContainer = document.createElement("div");
   contentContainer.style.cssText = `
     flex: 1;
     overflow-y: auto;
@@ -1196,9 +1228,9 @@ function showReviewsList() {
     scrollbar-width: thin;
     scrollbar-color: #FFC107 #f1f1f1;
   `;
-  
+
   // Add custom scrollbar styling for content
-  const contentScrollStyle = document.createElement('style');
+  const contentScrollStyle = document.createElement("style");
   contentScrollStyle.textContent = `
     #reviews-list-modal .content-container::-webkit-scrollbar {
       width: 6px;
@@ -1215,10 +1247,10 @@ function showReviewsList() {
     }
   `;
   document.head.appendChild(contentScrollStyle);
-  
+
   // No reviews state
   if (sellerNames.length === 0) {
-    const noReviewsMessage = document.createElement('div');
+    const noReviewsMessage = document.createElement("div");
     noReviewsMessage.style.cssText = `
       text-align: center;
       padding: 50px 20px;
@@ -1234,16 +1266,20 @@ function showReviewsList() {
   } else {
     // Add tabs for each seller
     sellerNames.forEach((sellerName, index) => {
-      const tab = document.createElement('button');
+      const tab = document.createElement("button");
       const reviews = allReviews[sellerName];
       const avgRating = getSellerAverageRating(sellerName);
-      
-      tab.innerHTML = `${sellerName} <span style="color: #FFC107; margin-left: 5px;">${avgRating.toFixed(1)}⭐</span>`;
+
+      tab.innerHTML = `${sellerName} <span style="color: #FFC107; margin-left: 5px;">${avgRating.toFixed(
+        1
+      )}⭐</span>`;
       tab.style.cssText = `
         padding: 10px 15px;
         border: none;
-        background: ${index === 0 ? 'linear-gradient(45deg, #FFC107, #FF9800)' : '#f1f1f1'};
-        color: ${index === 0 ? 'white' : '#555'};
+        background: ${
+          index === 0 ? "linear-gradient(45deg, #FFC107, #FF9800)" : "#f1f1f1"
+        };
+        color: ${index === 0 ? "white" : "#555"};
         border-radius: 20px;
         cursor: pointer;
         font-weight: 500;
@@ -1251,24 +1287,26 @@ function showReviewsList() {
         transition: all 0.2s ease;
         flex-shrink: 0;
       `;
-      
+
       tab.dataset.sellerName = sellerName;
-      
+
       tab.onclick = () => {
         // Update active tab
-        document.querySelectorAll('#reviews-list-modal .tabs-container button').forEach(t => {
-          t.style.background = '#f1f1f1';
-          t.style.color = '#555';
-        });
-        tab.style.background = 'linear-gradient(45deg, #FFC107, #FF9800)';
-        tab.style.color = 'white';
-        
+        document
+          .querySelectorAll("#reviews-list-modal .tabs-container button")
+          .forEach((t) => {
+            t.style.background = "#f1f1f1";
+            t.style.color = "#555";
+          });
+        tab.style.background = "linear-gradient(45deg, #FFC107, #FF9800)";
+        tab.style.color = "white";
+
         // Show this seller's reviews
         showSellerReviews(sellerName);
       };
-      
+
       tabsContainer.appendChild(tab);
-      
+
       // Display first seller's reviews by default
       if (index === 0) {
         setTimeout(() => {
@@ -1277,74 +1315,76 @@ function showReviewsList() {
       }
     });
   }
-  
+
   // Function to display a specific seller's reviews
   function showSellerReviews(sellerName) {
-    contentContainer.innerHTML = '';
-    
+    contentContainer.innerHTML = "";
+
     const reviews = getSellerReviews(sellerName);
     const avgRating = getSellerAverageRating(sellerName);
-    
+
     // Add header with average rating
-    const sellerHeader = document.createElement('div');
+    const sellerHeader = document.createElement("div");
     sellerHeader.style.cssText = `
       margin-bottom: 20px;
       padding-bottom: 15px;
       border-bottom: 1px solid #eee;
     `;
-    
-    const avgRatingDisplay = document.createElement('div');
+
+    const avgRatingDisplay = document.createElement("div");
     avgRatingDisplay.style.cssText = `
       display: flex;
       align-items: center;
       gap: 15px;
       margin-bottom: 10px;
     `;
-    
-    const ratingNumber = document.createElement('div');
+
+    const ratingNumber = document.createElement("div");
     ratingNumber.style.cssText = `
       font-size: 32px;
       font-weight: 700;
       color: #FF9800;
     `;
     ratingNumber.textContent = avgRating.toFixed(1);
-    
-    const starsDisplay = document.createElement('div');
+
+    const starsDisplay = document.createElement("div");
     starsDisplay.style.cssText = `
       color: #FFC107;
       font-size: 20px;
     `;
-    
+
     // Generate filled and empty stars based on average rating
     const filledStars = Math.floor(avgRating);
     const hasHalfStar = avgRating - filledStars >= 0.5;
-    
+
     for (let i = 1; i <= 5; i++) {
       if (i <= filledStars) {
-        starsDisplay.innerHTML += '★'; // Full star
+        starsDisplay.innerHTML += "★"; // Full star
       } else if (i === filledStars + 1 && hasHalfStar) {
-        starsDisplay.innerHTML += '⯨'; // Half star
+        starsDisplay.innerHTML += "⯨"; // Half star
       } else {
-        starsDisplay.innerHTML += '☆'; // Empty star
+        starsDisplay.innerHTML += "☆"; // Empty star
       }
     }
-    
-    const reviewCount = document.createElement('div');
+
+    const reviewCount = document.createElement("div");
     reviewCount.style.cssText = `
       font-size: 14px;
       color: #666;
     `;
-    reviewCount.textContent = `${reviews.length} review${reviews.length !== 1 ? 's' : ''}`;
-    
+    reviewCount.textContent = `${reviews.length} review${
+      reviews.length !== 1 ? "s" : ""
+    }`;
+
     avgRatingDisplay.appendChild(ratingNumber);
     avgRatingDisplay.appendChild(starsDisplay);
     sellerHeader.appendChild(avgRatingDisplay);
     sellerHeader.appendChild(reviewCount);
     contentContainer.appendChild(sellerHeader);
-    
+
     // Add reviews list
-    reviews.forEach(review => {
-      const reviewItem = document.createElement('div');
+    reviews.forEach((review) => {
+      const reviewItem = document.createElement("div");
       reviewItem.style.cssText = `
         background: white;
         border-radius: 10px;
@@ -1353,49 +1393,49 @@ function showReviewsList() {
         border: 1px solid #eee;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
       `;
-      
+
       // Rating stars
-      const stars = document.createElement('div');
+      const stars = document.createElement("div");
       stars.style.cssText = `
         color: #FFC107;
         font-size: 18px;
         margin-bottom: 10px;
       `;
-      
+
       for (let i = 1; i <= 5; i++) {
-        stars.innerHTML += i <= review.rating ? '★' : '☆';
+        stars.innerHTML += i <= review.rating ? "★" : "☆";
       }
-      
+
       // Date
-      const date = document.createElement('div');
+      const date = document.createElement("div");
       date.style.cssText = `
         font-size: 12px;
         color: #888;
         margin-bottom: 8px;
       `;
-      
+
       const reviewDate = new Date(review.date);
       date.textContent = reviewDate.toLocaleString();
-      
+
       // Comment
-      const comment = document.createElement('div');
+      const comment = document.createElement("div");
       comment.style.cssText = `
         font-size: 14px;
         line-height: 1.5;
         color: #333;
       `;
-      comment.textContent = review.comment || 'No comment provided';
-      
+      comment.textContent = review.comment || "No comment provided";
+
       reviewItem.appendChild(stars);
       reviewItem.appendChild(date);
       reviewItem.appendChild(comment);
       contentContainer.appendChild(reviewItem);
     });
   }
-  
+
   // Add new review button
-  const addReviewButton = document.createElement('button');
-  addReviewButton.innerHTML = '+ Add New Review';
+  const addReviewButton = document.createElement("button");
+  addReviewButton.innerHTML = "+ Add New Review";
   addReviewButton.style.cssText = `
     background: linear-gradient(45deg, #4CAF50, #8BC34A);
     color: white;
@@ -1408,35 +1448,35 @@ function showReviewsList() {
     margin-top: 20px;
     transition: all 0.2s ease;
   `;
-  
+
   addReviewButton.onmouseover = () => {
-    addReviewButton.style.transform = 'translateY(-2px)';
-    addReviewButton.style.boxShadow = '0 5px 10px rgba(0,0,0,0.2)';
+    addReviewButton.style.transform = "translateY(-2px)";
+    addReviewButton.style.boxShadow = "0 5px 10px rgba(0,0,0,0.2)";
   };
-  
+
   addReviewButton.onmouseout = () => {
-    addReviewButton.style.transform = 'translateY(0)';
-    addReviewButton.style.boxShadow = 'none';
+    addReviewButton.style.transform = "translateY(0)";
+    addReviewButton.style.boxShadow = "none";
   };
-  
+
   addReviewButton.onclick = () => {
     modal.remove();
     showReviewForm();
   };
-  
+
   // Assemble the modal
   header.appendChild(title);
   header.appendChild(closeButton);
-  
+
   modalContent.appendChild(header);
-  
+
   if (sellerNames.length > 0) {
     modalContent.appendChild(tabsContainer);
   }
-  
+
   modalContent.appendChild(contentContainer);
   modalContent.appendChild(addReviewButton);
-  
+
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
 }
@@ -1444,14 +1484,16 @@ function showReviewsList() {
 // Function to show copy notification
 function showCopyNotification(message, backgroundColor) {
   // Check if there's already a notification
-  const existingNotification = document.getElementById('ai-summary-notification');
+  const existingNotification = document.getElementById(
+    "ai-summary-notification"
+  );
   if (existingNotification) {
     existingNotification.remove();
   }
-  
+
   // Create notification element
-  const notification = document.createElement('div');
-  notification.id = 'ai-summary-notification';
+  const notification = document.createElement("div");
+  notification.id = "ai-summary-notification";
   notification.textContent = message;
   notification.style.cssText = `
     position: fixed;
@@ -1472,21 +1514,21 @@ function showCopyNotification(message, backgroundColor) {
     display: flex;
     align-items: center;
   `;
-  
+
   // Add to body
   document.body.appendChild(notification);
-  
+
   // Trigger animation
   setTimeout(() => {
-    notification.style.opacity = '1';
-    notification.style.transform = 'translateX(-50%) translateY(0)';
+    notification.style.opacity = "1";
+    notification.style.transform = "translateX(-50%) translateY(0)";
   }, 10);
-  
+
   // Remove after delay
   setTimeout(() => {
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateX(-50%) translateY(20px)';
-    
+    notification.style.opacity = "0";
+    notification.style.transform = "translateX(-50%) translateY(20px)";
+
     // Remove from DOM after fade out
     setTimeout(() => {
       notification.remove();
@@ -1497,14 +1539,14 @@ function showCopyNotification(message, backgroundColor) {
 // Function to extract the last 10 conversation messages
 function extractConversationMessages() {
   const messages = [];
-  
+
   // Get all seller and buyer messages on the page
-  const sellerMessages = document.querySelectorAll('.seller-msg');
-  const buyerMessages = document.querySelectorAll('.user-msg');
-  
+  const sellerMessages = document.querySelectorAll(".seller-msg");
+  const buyerMessages = document.querySelectorAll(".user-msg");
+
   // Combine all messages and sort them by their position in the DOM
   const allMessages = [...sellerMessages, ...buyerMessages];
-  
+
   // Sort messages based on their position in the DOM to get chronological order
   allMessages.sort((a, b) => {
     // Use node comparison for DOM position
@@ -1514,28 +1556,28 @@ function extractConversationMessages() {
       return 1;
     }
   });
-  
+
   // Get the last 10 messages (or fewer if there aren't 10)
   const lastMessages = allMessages.slice(-10);
-  
+
   // Extract text and sender type for each message
-  lastMessages.forEach(msg => {
+  lastMessages.forEach((msg) => {
     // Extract original text only, not including translation overlays
     const text = Array.from(msg.childNodes)
-      .filter(node => node.nodeType === Node.TEXT_NODE)
-      .map(node => node.textContent.trim())
-      .join('')
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent.trim())
+      .join("")
       .trim();
-    
+
     // Determine if this is a seller or buyer message
-    const isSeller = msg.classList.contains('seller-msg');
-    
+    const isSeller = msg.classList.contains("seller-msg");
+
     messages.push({
       text: text,
-      sender: isSeller ? 'seller' : 'buyer'
+      sender: isSeller ? "seller" : "buyer",
     });
   });
-  
+
   return messages;
 }
 
@@ -1544,28 +1586,33 @@ async function generateConversationSummary() {
   try {
     // Extract conversation messages
     const messages = extractConversationMessages();
-    
+
     if (messages.length === 0) {
       // Handle case where no messages are found
-      updateSummaryContent('No conversation messages found. Please make sure you have some messages in the chat.');
+      updateSummaryContent(
+        "No conversation messages found. Please make sure you have some messages in the chat."
+      );
       return;
     }
-    
+
     // Get buyer language from storage
-    const result = await chrome.storage.sync.get(['buyerLanguage']);
-    const buyerLanguage = result.buyerLanguage || 'en';
-    
+    const result = await chrome.storage.sync.get(["buyerLanguage"]);
+    const buyerLanguage = result.buyerLanguage || "en";
+
     // Send messages to background script for AI summarization
     chrome.runtime.sendMessage(
       {
-        action: 'generate_conversation_summary',
+        action: "generate_conversation_summary",
         messages: messages,
-        targetLanguage: buyerLanguage
+        targetLanguage: buyerLanguage,
       },
       (response) => {
         if (response.error) {
           // Handle error
-          updateSummaryContent(`Error generating summary: ${response.error}`, true);
+          updateSummaryContent(
+            `Error generating summary: ${response.error}`,
+            true
+          );
         } else if (response.summary) {
           // Display the summary
           updateSummaryContent(response.summary);
@@ -1573,31 +1620,31 @@ async function generateConversationSummary() {
       }
     );
   } catch (error) {
-    console.error('Error generating conversation summary:', error);
+    console.error("Error generating conversation summary:", error);
     updateSummaryContent(`Error: ${error.message}`, true);
   }
 }
 
 // Function to update the summary content in the modal
 function updateSummaryContent(content, isError = false) {
-  const contentArea = document.getElementById('ai-summary-content');
+  const contentArea = document.getElementById("ai-summary-content");
   if (!contentArea) return;
-  
+
   // Clear the loading spinner
-  contentArea.innerHTML = '';
-  
+  contentArea.innerHTML = "";
+
   // Create content container
-  const container = document.createElement('div');
+  const container = document.createElement("div");
   container.style.cssText = `
     padding: 15px;
-    ${isError ? 'color: #f44336;' : ''}
+    ${isError ? "color: #f44336;" : ""}
   `;
-  
+
   // Store the original plain text content as a data attribute for copying
   if (!isError) {
     container.dataset.plainText = content;
   }
-  
+
   // Add content
   if (isError) {
     // Show error message
@@ -1613,18 +1660,27 @@ function updateSummaryContent(content, isError = false) {
   } else {
     // Process the content to add visual enhancements
     let enhancedContent = content;
-    
+
     // Add styling to bullet points and numbers
     enhancedContent = enhancedContent
       // Style numbered lists (1. 2. 3. etc)
-      .replace(/(\d+\.\s)([^\n]+)/g, '<div class="summary-point"><span class="summary-number">$1</span>$2</div>')
+      .replace(
+        /(\d+\.\s)([^\n]+)/g,
+        '<div class="summary-point"><span class="summary-number">$1</span>$2</div>'
+      )
       // Style bullet points
-      .replace(/(\•|\-|\*)\s([^\n]+)/g, '<div class="summary-point"><span class="summary-bullet">•</span>$2</div>')
+      .replace(
+        /(\•|\-|\*)\s([^\n]+)/g,
+        '<div class="summary-point"><span class="summary-bullet">•</span>$2</div>'
+      )
       // Style section headers (lines ending with colon)
-      .replace(/([^\n:]+):(\s*(?:\n|$))/g, '<h3 class="summary-section">$1:</h3>$2')
+      .replace(
+        /([^\n:]+):(\s*(?:\n|$))/g,
+        '<h3 class="summary-section">$1:</h3>$2'
+      )
       // Add paragraph styling
-      .replace(/\n\n/g, '</p><p>');
-    
+      .replace(/\n\n/g, "</p><p>");
+
     // Show summary content with enhanced formatting
     container.innerHTML = `
       <style>
@@ -1701,7 +1757,7 @@ function updateSummaryContent(content, isError = false) {
       </div>
     `;
   }
-  
+
   contentArea.appendChild(container);
 }
 
@@ -3498,6 +3554,8 @@ function injectTranslateButton(inputField) {
   }
 
   // Create buttons for intentions
+  const goalButtons = []; // Store references to all goal buttons
+
   allIntentions.forEach((item) => {
     if (item.separator) {
       const separator = document.createElement("div");
@@ -3522,10 +3580,34 @@ function injectTranslateButton(inputField) {
         color: #e65100;
         white-space: nowrap;
       `;
-      goalBtn.onclick = () => {
-        generateAISuggestion(inputField, item.key);
+
+      goalBtn.onclick = async () => {
+        // Disable all goal buttons
+        goalButtons.forEach((btn) => {
+          btn.disabled = true;
+          btn.style.opacity = "0.6";
+        });
+
+        // Show loading on clicked button
+        const originalText = goalBtn.textContent;
+        goalBtn.textContent = "⏳";
+
+        try {
+          await generateAISuggestion(inputField, item.key);
+        } finally {
+          // Re-enable all goal buttons
+          goalButtons.forEach((btn) => {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+          });
+
+          // Reset clicked button text
+          goalBtn.textContent = originalText;
+        }
       };
+
       goalsContainer.appendChild(goalBtn);
+      goalButtons.push(goalBtn); // Store reference
     }
   });
 
@@ -3732,18 +3814,42 @@ function showIntentionModal(inputField) {
   }
 
   // Handle intention selection and custom goal deletion
-  modalContent.addEventListener("click", (e) => {
+  modalContent.addEventListener("click", async (e) => {
     if (e.target.classList.contains("intention-option")) {
       const intention = e.target.dataset.intention;
+      const button = e.target;
 
-      // Handle custom goals
-      if (intention.startsWith("custom_")) {
-        const goalId = intention.replace("custom_", "");
-        incrementGoalUsage(goalId);
+      // Store original texts and disable all intention buttons
+      const allIntentionButtons =
+        modalContent.querySelectorAll(".intention-option");
+      const originalTexts = {};
+      allIntentionButtons.forEach((btn) => {
+        originalTexts[btn.dataset.intention] = btn.textContent;
+        btn.disabled = true;
+        btn.style.opacity = "0.6";
+      });
+
+      // Show loading state on clicked button
+      button.textContent = "⏳ Loading...";
+
+      try {
+        // Handle custom goals
+        if (intention.startsWith("custom_")) {
+          const goalId = intention.replace("custom_", "");
+          incrementGoalUsage(goalId);
+        }
+
+        modal.remove();
+        await generateAISuggestion(inputField, intention);
+      } finally {
+        // Reset all buttons (in case modal wasn't removed due to error)
+        allIntentionButtons.forEach((btn) => {
+          if (!btn.isConnected) return; // Skip if element was removed
+          btn.disabled = false;
+          btn.style.opacity = "1";
+          btn.textContent = originalTexts[btn.dataset.intention];
+        });
       }
-
-      modal.remove();
-      generateAISuggestion(inputField, intention);
     } else if (e.target.id === "cancel-intention") {
       modal.remove();
     }
@@ -3801,7 +3907,7 @@ function setupMessageObserver() {
 }
 
 // Generate AI suggestion based on conversation history and intention
-function generateAISuggestion(inputField, intention) {
+async function generateAISuggestion(inputField, intention) {
   // Handle custom goals
   let actualIntention = intention;
   if (intention.startsWith("custom_")) {
@@ -3856,25 +3962,31 @@ function generateAISuggestion(inputField, intention) {
 
   // Send to background script for AI processing
   try {
-    if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
-      chrome.runtime.sendMessage(
-        {
-          action: "generate_smart_suggestion",
-          messages: messages,
-          intention: actualIntention,
-        },
-        (response) => {
-          if (response && response.suggestions) {
-            showSmartSuggestions(response.suggestions, inputField);
-          } else {
-            console.error("Failed to get AI suggestions");
+    const response = await new Promise((resolve, reject) => {
+      if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage(
+          {
+            action: "generate_smart_suggestion",
+            messages: messages,
+            intention: actualIntention,
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(response);
+            }
           }
-        }
-      );
+        );
+      } else {
+        reject(new Error("Chrome runtime not available"));
+      }
+    });
+
+    if (response && response.suggestions) {
+      showSmartSuggestions(response.suggestions, inputField);
     } else {
-      console.warn(
-        "Chrome runtime not available - extension may have been reloaded"
-      );
+      console.error("Failed to get AI suggestions");
     }
   } catch (error) {
     console.error("Extension context invalidated:", error);
