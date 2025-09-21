@@ -2015,7 +2015,42 @@ async function showNotesModal() {
   };
   
   refreshSummaryBtn.onclick = async () => {
-    await generateAutoSummary(summaryContent, copySummaryBtn);
+    // Prevent multiple simultaneous refreshes
+    if (refreshSummaryBtn.disabled) {
+      return;
+    }
+    
+    // Show loading state
+    refreshSummaryBtn.disabled = true;
+    refreshSummaryBtn.innerHTML = '⏳ Refreshing...';
+    refreshSummaryBtn.style.opacity = '0.7';
+    
+    // Also disable copy button during refresh
+    copySummaryBtn.disabled = true;
+    copySummaryBtn.style.opacity = '0.5';
+    
+    // Show loading in content area
+    summaryContent.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #666;">
+        <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+        <h3>Refreshing Summary...</h3>
+        <p>Generating fresh analysis of the last 20 messages</p>
+        <div style="margin-top: 15px; color: #999; font-size: 14px;">This may take a few moments...</div>
+      </div>
+    `;
+    
+    try {
+      await generateAutoSummary(summaryContent, copySummaryBtn, true);
+    } catch (error) {
+      console.error('Refresh summary error:', error);
+    } finally {
+      // Restore button states
+      refreshSummaryBtn.disabled = false;
+      refreshSummaryBtn.innerHTML = '🔄 Refresh Summary';
+      refreshSummaryBtn.style.opacity = '1';
+      
+      // Copy button will be re-enabled by generateAutoSummary if successful
+    }
   };
   
   // Close modal on outside click
@@ -2030,8 +2065,19 @@ async function showNotesModal() {
 }
 
 // Automatically generate summary with last 20 messages
-async function generateAutoSummary(contentDiv, copyBtn) {
+async function generateAutoSummary(contentDiv, copyBtn, isRefresh = false) {
   try {
+    // Show initial loading state if not already shown (for auto-generation)
+    if (!isRefresh) {
+      contentDiv.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #666;">
+          <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+          <h3>Generating Summary...</h3>
+          <p>Analyzing the last 20 messages from your conversation</p>
+        </div>
+      `;
+    }
+    
     const filteredMessages = getFilteredMessages('messages', '20');
     console.log(`Generating auto-summary for ${filteredMessages.length} messages:`, filteredMessages);
     
@@ -2064,6 +2110,26 @@ async function generateAutoSummary(contentDiv, copyBtn) {
     // Enable copy button
     copyBtn.disabled = false;
     copyBtn.style.opacity = '1';
+    
+    // Show success feedback for refresh
+    if (isRefresh) {
+      // Briefly show success message
+      const originalContent = contentDiv.innerHTML;
+      contentDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: #4CAF50; background: #e8f5e8; border-radius: 6px; margin-bottom: 15px;">
+          <div style="font-size: 24px; margin-bottom: 8px;">✅</div>
+          <strong>Summary Refreshed Successfully!</strong>
+        </div>
+      ` + originalContent;
+      
+      // Remove success message after 2 seconds
+      setTimeout(() => {
+        const successMsg = contentDiv.querySelector('div[style*="background: #e8f5e8"]');
+        if (successMsg) {
+          successMsg.remove();
+        }
+      }, 2000);
+    }
     
   } catch (error) {
     console.error('Auto-summarization error:', error);
