@@ -73,9 +73,17 @@
         background: #e55a2b;
       }
 
-      .btn:disabled {
-        background: #ccc;
-        cursor: not-allowed;
+      .bookmarks-section {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-top: 15px;
+      }
+
+      .bookmark-item:hover {
+        border-color: #2196f3 !important;
+        box-shadow: 0 2px 6px rgba(33, 150, 243, 0.2);
       }
     </style>
   </head>
@@ -173,6 +181,45 @@
           </option>
         </select>
       </div>
+      <div style="margin-bottom: 10px">
+        <label
+          style="
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+          "
+        >
+          My Language (for receiving translations):
+        </label>
+        <select
+          id="buyer-language-select"
+          style="
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            box-sizing: border-box;
+          "
+        >
+          <option value="en">English</option>
+          <option value="bn">Bengali (বাংলা)</option>
+          <option value="hi">Hindi (हिन्दी)</option>
+          <option value="ur">Urdu (اردو)</option>
+          <option value="ar">Arabic (العربية)</option>
+          <option value="es">Spanish (Español)</option>
+          <option value="fr">French (Français)</option>
+          <option value="de">German (Deutsch)</option>
+          <option value="it">Italian (Italiano)</option>
+          <option value="pt">Portuguese (Português)</option>
+          <option value="ru">Russian (Русский)</option>
+          <option value="ja">Japanese (日本語)</option>
+          <option value="ko">Korean (한국어)</option>
+          <option value="th">Thai (ไทย)</option>
+          <option value="vi">Vietnamese (Tiếng Việt)</option>
+        </select>
+      </div>
       <button
         class="btn"
         id="save-api-key"
@@ -218,6 +265,24 @@
         margin: 8px 0 0 0; 
         background: #4CAF50;
       ">View All Notes</button>
+    </div>
+
+    <div class="bookmarks-section">
+      <h3 style="margin: 15px 0 10px 0; color: #333; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <span>📖 Saved Messages</span>
+        <button id="refresh-bookmarks" style="background: none; border: none; cursor: pointer; font-size: 12px; color: #666; padding: 2px 6px;">↻</button>
+      </h3>
+
+      <div id="bookmarks-container" style="max-height: 300px; overflow-y: auto;">
+        <div id="bookmarks-list">
+          <!-- Bookmarks will be loaded here -->
+        </div>
+
+        <div id="no-bookmarks" style="text-align: center; color: #999; font-size: 12px; padding: 20px; display: none;">
+          No saved messages yet.<br>
+          <small>Use the bookmark button (🔖) on messages in chat to save them.</small>
+        </div>
+      </div>
     </div>
 
     <button class="btn" id="test-btn">Test on Demo Page</button>

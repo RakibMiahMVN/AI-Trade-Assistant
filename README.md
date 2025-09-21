@@ -1,6 +1,20 @@
 # AI Trade Assistant
 
-A powerful browser extension that revolutionizes international trade communication by providing real-time translation and AI-powered response suggestions for buyers communicating with Chinese sellers on platforms like 1688.com.
+A po### Seller Intention Analysis
+
+- **Hidden Meaning Detection**: Click "?" button beside seller messages to analyze their true intentions
+- **Token-Optimized Processing**: AI generates analysis in English, then translates to user's language for display
+- **Bilingual Display**: Shows both English (blue) and Bengali (red) versions when Bengali is selected for clarity
+- **Negotiation Insights**: Understand seller's firmness on price, MOQ flexibility, and communication tone
+- **Strategic Intelligence**: Get key insights about the seller's position and negotiation approach
+- **Real-time Analysis**: AI-powered analysis of the last 3 seller messages browser extension that revolutionizes international trade### � Message Bookmarking
+
+- **Save Frequently Used Messages**: Click the 🔖 button beside your sent messages to bookmark them
+- **Quick Access**: Focus on the input field to see your bookmarked messages
+- **Easy Insertion**: Click any bookmark to insert it into the input field
+- **Delete Bookmarks**: Remove unwanted bookmarks with the delete button
+- **Local Storage**: Bookmarks are stored locally (up to 10 messages)
+- **Success Notifications**: Get feedback when messages are bookmarked or deletednication by providing real-time translation and AI-powered response suggestions for buyers communicating with Chinese sellers on platforms like 1688.com.
 
 ## 🌟 Features
 
@@ -15,7 +29,7 @@ A powerful browser extension that revolutionizes international trade communicati
 
 - **Context-Aware Responses**: Generates intelligent reply suggestions based on conversation history
 - **Intention-Based Suggestions**: Choose specific goals like getting better prices, requesting samples, or negotiating terms
-- **Bilingual Output**: Provides suggestions in both Chinese (for sending) and Bengali (for understanding)
+- **Multilingual Output**: Provides suggestions in Chinese (for sending) and your selected language (for understanding)
 - **Multiple AI Models**: Supports various Groq AI models for different quality/speed preferences
 
 ### 🔍 Seller Intention Analysis
@@ -24,6 +38,15 @@ A powerful browser extension that revolutionizes international trade communicati
 - **Negotiation Insights**: Understand seller's firmness on price, MOQ flexibility, and communication tone
 - **Strategic Intelligence**: Get key insights about the seller's position and negotiation approach
 - **Real-time Analysis**: AI-powered analysis of the last 3 seller messages
+
+### 🔖 Message Bookmarking
+
+- **Save Frequently Used Messages**: Click the 🔖 button beside your sent messages to bookmark them
+- **Quick Access**: Focus on the input field to see your bookmarked messages
+- **Easy Insertion**: Click any bookmark to insert it into the input field
+- **Delete Bookmarks**: Remove unwanted bookmarks with the delete button
+- **Local Storage**: Bookmarks are stored locally (up to 10 messages)
+- **Success Notifications**: Get feedback when messages are bookmarked or deleted
 
 ### 🎯 Smart Negotiation Tools
 
@@ -61,6 +84,7 @@ A powerful browser extension that revolutionizes international trade communicati
    - **llama-3.1-405b-reasoning**: Advanced Reasoning
    - **mixtral-8x7b-32768**: Large Context
    - **gemma2-9b-it**: Google Model
+4. Choose your language for receiving translations (English, Bengali, Hindi, Urdu, Arabic, Spanish, French, German, Italian, Portuguese, Russian, Japanese, Korean, Thai, Vietnamese)
 
 ### Testing the Extension
 
@@ -81,8 +105,10 @@ A powerful browser extension that revolutionizes international trade communicati
 
 ### Translation Features
 
-- **Seller Messages**: Automatically appear with Bengali translations
-- **Your Messages**: Click the 中 button to translate English to Chinese before sending
+- **Seller Messages**: Automatically translated to your selected language
+- **Your Messages**: Click the 中 button to translate from your selected language to Chinese before sending
+- **Dynamic Language Support**: All translations adapt to your language preference
+- **Flag Indicators**: Each translation shows the appropriate country flag
 - **Toggle Translations**: Click any translation overlay to hide/show it
 
 ### Seller Intention Analysis
@@ -118,8 +144,10 @@ A powerful browser extension that revolutionizes international trade communicati
 
 ### Supported Languages
 
-- **Chinese (zh)** ↔ **Bengali (bn)**
-- **English (en)** → **Chinese (zh)**
+- **Seller Messages**: Chinese (zh) → Your selected language
+- **Buyer Messages**: Chinese (zh) → Your selected language (for understanding sent messages)
+- **Translation to Chinese**: Your selected language → Chinese (zh) for sending
+- **Available Languages**: English, Bengali, Hindi, Urdu, Arabic, Spanish, French, German, Italian, Portuguese, Russian, Japanese, Korean, Thai, Vietnamese
 
 ## 🔧 Development
 

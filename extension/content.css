@@ -84,3 +84,50 @@
     padding: 6px 10px;
   }
 }
+
+/* Intention analysis button styles */
+.intention-btn {
+  transition: all 0.3s ease;
+}
+
+.intention-btn:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.intention-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Intention analysis popup styles */
+.intention-analysis-popup {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.intention-analysis-popup h3 {
+  border-bottom: 2px solid #ff6b35;
+  padding-bottom: 10px;
+}
+
+.intention-analysis-popup strong {
+  color: #ff6b35;
+}
+
+.intention-analysis-popup ul {
+  list-style-type: disc;
+}
+
+.intention-analysis-popup li {
+  margin-bottom: 4px;
+}
