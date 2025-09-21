@@ -62,6 +62,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true; // Keep message channel open for async response
   }
+
+  if (request.action === "generate_seller_response") {
+    generateSellerResponse(request.conversation)
+      .then((sellerResponse) => {
+        sendResponse({ sellerResponse });
+      })
+      .catch((error) => {
+        console.error("Seller response generation error:", error);
+        sendResponse({ error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
+
+  if (request.action === "analyze_negotiation_result") {
+    analyzeNegotiationResult(request.conversation)
+      .then((analysis) => {
+        sendResponse({ analysis });
+      })
+      .catch((error) => {
+        console.error("Negotiation analysis error:", error);
+        sendResponse({ error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
 });
 
 // Translate text using Google Translate unofficial API
@@ -768,8 +792,7 @@ Translate naturally and contextually appropriate for business communication.`,
     console.log("Banglish translation result:", content.trim());
 
     // Clean up the response (remove any extra text, quotes, etc.)
-    return content.trim().replace(/^["']|["']$/g, '');
-
+    return content.trim().replace(/^["']|["']$/g, "");
   } catch (error) {
     console.error("Banglish translation error:", error);
 
@@ -786,6 +809,223 @@ Translate naturally and contextually appropriate for business communication.`,
     // Fallback: return a generic message
     return "翻译失败，请重试"; // Translation failed, please try again
   }
+}
+
+// Generate seller response for auto-negotiation simulation (TESTING FEATURE)
+async function generateSellerResponse(conversation) {
+  // Get API key and model from Chrome storage
+  const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
+  const API_KEY = result.groqApiKey;
+  const MODEL = result.groqModel || "llama-3.1-8b-instant";
+
+  if (!API_KEY || API_KEY.trim() === "") {
+    console.log("Groq API key not set. Returning fallback seller response.");
+    return getFallbackSellerResponse();
+  }
+
+  const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+  // Format conversation history
+  const conversationText = conversation
+    .map((msg) => `${msg.type}: ${msg.text}`)
+    .join("\n");
+
+  try {
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `You are a Chinese seller on Alibaba negotiating with a buyer. Your goal is to make a sale while protecting your interests. You should:
+
+1. Be polite and professional
+2. Start firm on price and MOQ but be willing to negotiate
+3. Consider offering discounts, free samples, or free shipping as concessions
+4. Use realistic Chinese business communication style
+5. Try to close the deal when appropriate
+
+Respond in Chinese only. Keep responses realistic and not too generous initially. Return only the Chinese response text, nothing else.`,
+        },
+        {
+          role: "user",
+          content: `Based on this conversation, generate the next seller response in Chinese:\n\n${conversationText}`,
+        },
+      ],
+      max_tokens: 150,
+      temperature: 0.7,
+    };
+
+    console.log("Generating seller response for auto-negotiation");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Seller response API Error:", response.status, errorText);
+      throw new Error(`Groq API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Seller response result:", data);
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in seller response");
+    }
+
+    console.log("Generated seller response:", content.trim());
+    return content.trim();
+  } catch (error) {
+    console.error("Seller response generation error:", error);
+    return getFallbackSellerResponse();
+  }
+}
+
+// Get fallback seller response when AI fails
+function getFallbackSellerResponse() {
+  const responses = [
+    "我们的价格已经很优惠了，但我们可以考虑给您一些折扣。",
+    "我们可以提供样品，但需要您支付运费。",
+    "最低起订量是100件，但对于首次合作我们可以商量。",
+    "谢谢您的兴趣，我们可以给您更好的价格。",
+    "我们可以免费送货，但需要达到一定的订单量。",
+    "我们有免费样品政策，但仅限新客户。",
+  ];
+  return responses[Math.floor(Math.random() * responses.length)];
+}
+
+// Analyze negotiation result to determine if buyer won (TESTING FEATURE)
+async function analyzeNegotiationResult(conversationText) {
+  // Get API key and model from Chrome storage
+  const result = await chrome.storage.sync.get(["groqApiKey", "groqModel"]);
+  const API_KEY = result.groqApiKey;
+  const MODEL = result.groqModel || "llama-3.1-8b-instant";
+
+  if (!API_KEY || API_KEY.trim() === "") {
+    console.log("Groq API key not set. Returning fallback analysis.");
+    return getFallbackNegotiationAnalysis();
+  }
+
+  const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+  try {
+    const requestBody = {
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `Analyze this negotiation conversation and determine if the buyer "won". The buyer wins if they got:
+- Price discounts
+- Free samples
+- Free shipping/delivery
+- Reduced MOQ
+- Better payment terms
+- Any other concessions from the seller
+
+Return a JSON object with exactly this structure:
+{
+  "won": true/false,
+  "summary": "Brief explanation of why buyer won/lost and what concessions were made"
+}
+
+Be realistic - buyers don't always win negotiations.`,
+        },
+        {
+          role: "user",
+          content: `Analyze this negotiation conversation:\n\n${conversationText}`,
+        },
+      ],
+      max_tokens: 200,
+      temperature: 0.3,
+    };
+
+    console.log("Analyzing negotiation result");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY.trim()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log(
+        "Negotiation analysis API Error:",
+        response.status,
+        errorText
+      );
+      throw new Error(`Groq API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Negotiation analysis result:", data);
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in negotiation analysis");
+    }
+
+    console.log("Negotiation analysis:", content.trim());
+
+    // Parse the JSON response
+    try {
+      const analysis = JSON.parse(content.trim());
+      return analysis;
+    } catch (parseError) {
+      console.error("Failed to parse analysis JSON:", parseError);
+      return getFallbackNegotiationAnalysis();
+    }
+  } catch (error) {
+    console.error("Negotiation analysis error:", error);
+    return getFallbackNegotiationAnalysis();
+  }
+}
+
+// Get fallback negotiation analysis when AI fails
+function getFallbackNegotiationAnalysis() {
+  const analyses = [
+    {
+      won: true,
+      summary:
+        "Buyer successfully negotiated better terms including discounts and free samples.",
+    },
+    {
+      won: false,
+      summary:
+        "Seller maintained firm position on price and MOQ, buyer didn't get significant concessions.",
+    },
+    {
+      won: true,
+      summary: "Buyer got free shipping and reduced minimum order quantity.",
+    },
+    {
+      won: false,
+      summary: "Negotiation ended without clear concessions from the seller.",
+    },
+  ];
+  return analyses[Math.floor(Math.random() * analyses.length)];
 }
 
 // Handle extension installation

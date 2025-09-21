@@ -71,6 +71,8 @@ function scanForSellerMessages() {
 
   // Add intention analysis buttons to the last 3 seller messages
   addIntentionButtons();
+  // Add auto-negotiation button (TESTING FEATURE)
+  addAutoNegotiationButtons();
 }
 
 // Detect buyer messages and add translation overlays
@@ -326,6 +328,69 @@ function addIntentionButtons() {
 
   // Insert button into the message content
   messageContent.appendChild(intentionBtn);
+}
+
+// Add auto-negotiation button to the last seller message only (TESTING FEATURE)
+function addAutoNegotiationButtons() {
+  const allSellerMessages = document.querySelectorAll(".seller-msg");
+  if (allSellerMessages.length === 0) return;
+
+  // Get only the last seller message
+  const lastSellerMessage = allSellerMessages[allSellerMessages.length - 1];
+
+  // Check if button already exists
+  if (lastSellerMessage.parentNode.querySelector(".auto-negotiate-btn")) return;
+
+  // Create auto-negotiation button
+  const autoNegotiateBtn = document.createElement("button");
+  autoNegotiateBtn.className = "auto-negotiate-btn";
+  autoNegotiateBtn.textContent = "🤖";
+  autoNegotiateBtn.title = "Auto-negotiate (TESTING)";
+  autoNegotiateBtn.style.cssText = `
+    position: absolute;
+    top: -8px;
+    right: 20px;
+    background: #9c27b0;
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    z-index: 10;
+  `;
+
+  autoNegotiateBtn.onmouseover = () => {
+    autoNegotiateBtn.style.background = "#7b1fa2";
+    autoNegotiateBtn.style.transform = "scale(1.1)";
+  };
+
+  autoNegotiateBtn.onmouseout = () => {
+    autoNegotiateBtn.style.background = "#9c27b0";
+    autoNegotiateBtn.style.transform = "scale(1)";
+  };
+
+  autoNegotiateBtn.onclick = () => {
+    startAutoNegotiation(lastSellerMessage);
+  };
+
+  // Make message content position relative for absolute positioning
+  const messageContent = lastSellerMessage.parentNode;
+  if (
+    messageContent &&
+    getComputedStyle(messageContent).position === "static"
+  ) {
+    messageContent.style.position = "relative";
+  }
+
+  // Insert button into the message content
+  messageContent.appendChild(autoNegotiateBtn);
 } // Bookmark a buyer message
 async function bookmarkMessage(messageElement) {
   // Extract only the original text, excluding translation overlays
@@ -1006,6 +1071,492 @@ async function analyzeSellerIntention(messageElement) {
   }
 }
 
+// Start auto-negotiation simulation (TESTING FEATURE)
+async function startAutoNegotiation(messageElement) {
+  // Collect last 3 conversations from both sides
+  const conversation = [];
+  const messageElements = document.querySelectorAll(".seller-msg, .user-msg");
+
+  // Separate seller and buyer messages
+  const sellerMessages = [];
+  const buyerMessages = [];
+
+  messageElements.forEach((el) => {
+    const content = el.querySelector(".message-content");
+    let text = "";
+
+    if (content) {
+      // Get the first text node (original message) and ignore overlay elements
+      const childNodes = Array.from(content.childNodes);
+      const textNode = childNodes.find(
+        (node) => node.nodeType === Node.TEXT_NODE
+      );
+      if (textNode) {
+        text = textNode.textContent.trim();
+      } else if (childNodes.length > 0) {
+        // Fallback: get text from first child if no direct text node
+        text = childNodes[0].textContent
+          ? childNodes[0].textContent.trim()
+          : "";
+      }
+    } else {
+      // If no message-content div, extract only text nodes excluding overlays
+      text = Array.from(el.childNodes)
+        .filter((node) => node.nodeType === Node.TEXT_NODE)
+        .map((node) => node.textContent.trim())
+        .join("")
+        .trim();
+    }
+
+    if (text) {
+      const type = el.classList.contains("seller-msg") ? "seller" : "buyer";
+      const messageData = {
+        text: text,
+        type: type,
+        element: el, // Keep reference to element for ordering
+      };
+
+      if (type === "seller") {
+        sellerMessages.push(messageData);
+      } else {
+        buyerMessages.push(messageData);
+      }
+    }
+  });
+
+  // Get last 3 from each side
+  const last3Seller = sellerMessages.slice(-3);
+  const last3Buyer = buyerMessages.slice(-3);
+
+  // Combine and sort chronologically (by DOM position)
+  const combinedMessages = [...last3Seller, ...last3Buyer].sort((a, b) => {
+    // Sort by position in DOM to maintain chronological order
+    const allMessages = Array.from(messageElements);
+    return allMessages.indexOf(a.element) - allMessages.indexOf(b.element);
+  });
+
+  // Extract just the text and type for the conversation
+  combinedMessages.forEach((msg) => {
+    conversation.push({
+      text: msg.text,
+      type: msg.type,
+    });
+  });
+
+  if (conversation.length === 0) return;
+
+  // Show simulation modal with recent conversation
+  await showNegotiationSimulation(conversation);
+}
+
+// Expose function globally for testing
+window.startAutoNegotiation = startAutoNegotiation;
+
+// Show negotiation simulation modal
+async function showNegotiationSimulation(fullConversation) {
+  // Remove existing modal if any
+  const existingModal = document.querySelector(".negotiation-simulation-modal");
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Create modal overlay
+  const modal = document.createElement("div");
+  modal.className = "negotiation-simulation-modal";
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+
+  // Create modal content
+  const modalContent = document.createElement("div");
+  modalContent.style.cssText = `
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+  `;
+
+  const title = document.createElement("h3");
+  title.textContent = "🤖 Auto-Negotiation Simulation (TESTING)";
+  title.style.cssText = `
+    margin: 0 0 15px 0;
+    color: #9c27b0;
+    font-size: 18px;
+    text-align: center;
+  `;
+
+  const progressDiv = document.createElement("div");
+  progressDiv.style.cssText = `
+    margin-bottom: 15px;
+    text-align: center;
+    color: #666;
+  `;
+
+  const conversationDiv = document.createElement("div");
+  conversationDiv.id = "negotiation-conversation";
+  conversationDiv.style.cssText = `
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    max-height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f9f9f9;
+  `;
+
+  const resultDiv = document.createElement("div");
+  resultDiv.id = "negotiation-result";
+  resultDiv.style.cssText = `
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 8px;
+    display: none;
+  `;
+
+  const buttonDiv = document.createElement("div");
+  buttonDiv.style.cssText = `
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  `;
+
+  const startBtn = document.createElement("button");
+  startBtn.textContent = "Start Simulation";
+  startBtn.style.cssText = `
+    padding: 8px 16px;
+    background: #9c27b0;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  `;
+
+  const stopBtn = document.createElement("button");
+  stopBtn.textContent = "Stop";
+  stopBtn.style.cssText = `
+    padding: 8px 16px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: none;
+  `;
+
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "Close";
+  closeBtn.style.cssText = `
+    padding: 8px 16px;
+    background: #666;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  `;
+
+  buttonDiv.appendChild(startBtn);
+  buttonDiv.appendChild(stopBtn);
+  buttonDiv.appendChild(closeBtn);
+
+  modalContent.appendChild(title);
+  modalContent.appendChild(progressDiv);
+  modalContent.appendChild(conversationDiv);
+  modalContent.appendChild(resultDiv);
+  modalContent.appendChild(buttonDiv);
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+
+  let isRunning = false;
+  let conversation = [...fullConversation]; // Start with full conversation history
+
+  // Add existing conversation to display
+  for (const msg of conversation) {
+    const color = msg.type === "seller" ? "#ff6b35" : "#2196f3";
+    const sender = msg.type === "seller" ? "Seller" : "Buyer";
+    await addMessageToConversation(conversationDiv, sender, msg.text, color);
+  }
+
+  startBtn.onclick = async () => {
+    if (isRunning) return;
+    isRunning = true;
+    startBtn.style.display = "none";
+    stopBtn.style.display = "inline-block";
+    resultDiv.style.display = "none";
+
+    await runNegotiationSimulation(
+      conversation,
+      conversationDiv,
+      progressDiv,
+      resultDiv
+    );
+  };
+
+  stopBtn.onclick = () => {
+    isRunning = false;
+    stopBtn.style.display = "none";
+    startBtn.style.display = "inline-block";
+    progressDiv.textContent = "Simulation stopped";
+  };
+
+  closeBtn.onclick = () => {
+    modal.remove();
+  };
+
+  // Close modal when clicking outside
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+}
+
+// Add message to conversation display
+async function addMessageToConversation(container, sender, message, color) {
+  const messageDiv = document.createElement("div");
+  messageDiv.style.cssText = `
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: ${color}20;
+    border-left: 3px solid ${color};
+  `;
+
+  const senderSpan = document.createElement("strong");
+  senderSpan.textContent = `${sender}: `;
+  senderSpan.style.color = color;
+
+  messageDiv.appendChild(senderSpan);
+  messageDiv.appendChild(document.createTextNode(message));
+
+  // Add translations
+  try {
+    // Translate to English
+    const enResponse = await chrome.runtime.sendMessage({
+      action: "translate",
+      text: message,
+      from: "zh",
+      to: "en",
+    });
+    if (enResponse.translation) {
+      const enDiv = document.createElement("div");
+      enDiv.textContent = `🇺🇸 ${enResponse.translation}`;
+      enDiv.style.cssText = `font-size: 12px; color: #666; margin-top: 4px;`;
+      messageDiv.appendChild(enDiv);
+    }
+
+    // Translate to Bengali
+    const bnResponse = await chrome.runtime.sendMessage({
+      action: "translate",
+      text: message,
+      from: "zh",
+      to: "bn",
+    });
+    if (bnResponse.translation) {
+      const bnDiv = document.createElement("div");
+      bnDiv.textContent = `🇧🇩 ${bnResponse.translation}`;
+      bnDiv.style.cssText = `font-size: 12px; color: #d32f2f; margin-top: 2px;`;
+      messageDiv.appendChild(bnDiv);
+    }
+  } catch (error) {
+    console.error("Translation error for message:", error);
+  }
+
+  container.appendChild(messageDiv);
+  container.scrollTop = container.scrollHeight;
+}
+
+// Run the negotiation simulation
+async function runNegotiationSimulation(
+  conversation,
+  conversationDiv,
+  progressDiv,
+  resultDiv
+) {
+  const maxRounds = 4; // Maximum negotiation rounds
+  let currentRound = 0;
+
+  while (currentRound < maxRounds) {
+    currentRound++;
+    progressDiv.textContent = `Round ${currentRound}/${maxRounds} - Generating responses...`;
+
+    try {
+      // Generate buyer response
+      const buyerResponse = await generateBuyerResponse(conversation);
+      if (!buyerResponse) break;
+
+      conversation.push({ type: "buyer", text: buyerResponse });
+      await addMessageToConversation(
+        conversationDiv,
+        "Buyer",
+        buyerResponse,
+        "#2196f3"
+      );
+
+      progressDiv.textContent = `Round ${currentRound}/${maxRounds} - Seller thinking...`;
+
+      // Generate seller response
+      const sellerResponse = await generateSellerResponse(conversation);
+      if (!sellerResponse) break;
+
+      conversation.push({ type: "seller", text: sellerResponse });
+      await addMessageToConversation(
+        conversationDiv,
+        "Seller",
+        sellerResponse,
+        "#ff6b35"
+      );
+
+      // Check if negotiation should end (seller agrees or buyer gets what they want)
+      if (await shouldEndNegotiation(conversation)) {
+        break;
+      }
+
+      // Small delay between rounds
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error("Simulation error:", error);
+      progressDiv.textContent = "Error occurred during simulation";
+      break;
+    }
+  }
+
+  // Analyze final result
+  progressDiv.textContent = "Analyzing final result...";
+  const analysis = await analyzeNegotiationResult(conversation);
+
+  // Translate summary to Bengali
+  let translatedSummary = analysis.summary;
+  try {
+    const translateResponse = await chrome.runtime.sendMessage({
+      action: "translate",
+      text: analysis.summary,
+      from: "en",
+      to: "bn",
+    });
+    if (translateResponse.translation) {
+      translatedSummary = translateResponse.translation;
+    }
+  } catch (error) {
+    console.error("Translation error for summary:", error);
+  }
+
+  resultDiv.style.display = "block";
+  resultDiv.innerHTML = `
+    <h4 style="margin: 0 0 10px 0; color: ${
+      analysis.won ? "#4caf50" : "#f44336"
+    };">${analysis.won ? "🎉 Buyer Won!" : "❌ Negotiation Ended"}</h4>
+    <p style="margin: 0 0 8px 0; color: #333;"><strong>English:</strong> ${
+      analysis.summary
+    }</p>
+    <p style="margin: 0; color: #d32f2f;"><strong>বাংলা:</strong> ${translatedSummary}</p>
+  `;
+
+  progressDiv.textContent = "Simulation complete";
+}
+
+// Generate buyer response using existing AI system
+async function generateBuyerResponse(conversation) {
+  // Use the last few messages for context
+  const recentMessages = conversation.slice(-4);
+
+  // Try different negotiation intentions in sequence
+  const intentions = [
+    "get_better_price",
+    "request_samples",
+    "request_moq",
+    "other",
+  ];
+
+  for (const intention of intentions) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: "generate_smart_suggestion",
+        messages: recentMessages,
+        intention: intention,
+      });
+
+      if (response && response.suggestions && response.suggestions.length > 0) {
+        // Return the first suggestion in Chinese
+        return response.suggestions[0].chinese;
+      }
+    } catch (error) {
+      console.error("Buyer response generation error:", error);
+    }
+  }
+
+  // Fallback response
+  return "谢谢您的信息，我想了解更多关于价格和样品的信息。"; // Thank you for the information, I want to know more about price and samples.
+}
+
+// Generate seller response using AI
+async function generateSellerResponse(conversation) {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: "generate_seller_response",
+      conversation: conversation,
+    });
+
+    return response.sellerResponse;
+  } catch (error) {
+    console.error("Seller response generation error:", error);
+    // Fallback seller responses
+    const fallbacks = [
+      "我们的价格已经很优惠了，但我们可以考虑小批量订单。",
+      "我们可以提供样品，但需要您支付运费。",
+      "最低起订量是100件，但我们可以商量。",
+      "谢谢您的兴趣，我们可以给您更好的价格。",
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+}
+
+// Check if negotiation should end
+async function shouldEndNegotiation(conversation) {
+  // Simple check: if conversation has more than 6 exchanges, end it
+  return conversation.length >= 6;
+}
+
+// Analyze the final negotiation result
+async function analyzeNegotiationResult(conversation) {
+  const fullConversation = conversation
+    .map((msg) => `${msg.type}: ${msg.text}`)
+    .join("\n");
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: "analyze_negotiation_result",
+      conversation: fullConversation,
+    });
+
+    return response.analysis;
+  } catch (error) {
+    console.error("Analysis error:", error);
+    // Fallback analysis
+    return {
+      won: Math.random() > 0.5, // Random for testing
+      summary: "Analysis failed, but simulation completed successfully.",
+    };
+  }
+}
+
 // Detect input field and add suggestion functionality
 function setupInputField() {
   const chatInput = document.getElementById("chat-input");
@@ -1039,7 +1590,8 @@ function injectTranslateButton(inputField) {
   const translateBtn = document.createElement("button");
   translateBtn.className = "translate-btn";
   translateBtn.textContent = "EN 中";
-  translateBtn.title = "Click to translate (EN mode) | Right-click to toggle language";
+  translateBtn.title =
+    "Click to translate (EN mode) | Right-click to toggle language";
   translateBtn.style.cssText = `
     position: absolute;
     right: 8px;
@@ -1067,13 +1619,17 @@ function injectTranslateButton(inputField) {
   function updateButtonAppearance() {
     if (currentLanguage === "en") {
       translateBtn.textContent = "EN 中";
-      translateBtn.title = "Click to translate (English mode) | Right-click to switch to Banglish";
-      translateBtn.style.background = "linear-gradient(135deg, #ff6b35, #ff8c42)";
+      translateBtn.title =
+        "Click to translate (English mode) | Right-click to switch to Banglish";
+      translateBtn.style.background =
+        "linear-gradient(135deg, #ff6b35, #ff8c42)";
       translateBtn.style.boxShadow = "0 2px 4px rgba(255, 107, 53, 0.3)";
     } else {
       translateBtn.textContent = "BN 中";
-      translateBtn.title = "Click to translate (Banglish mode) | Right-click to switch to English";
-      translateBtn.style.background = "linear-gradient(135deg, #A0522D, #8B4513)";
+      translateBtn.title =
+        "Click to translate (Banglish mode) | Right-click to switch to English";
+      translateBtn.style.background =
+        "linear-gradient(135deg, #A0522D, #8B4513)";
       translateBtn.style.boxShadow = "0 2px 4px rgba(160, 82, 45, 0.3)";
     }
   }
@@ -1081,9 +1637,10 @@ function injectTranslateButton(inputField) {
   translateBtn.onmouseover = () => {
     const scale = currentLanguage === "en" ? 1.05 : 1.05;
     translateBtn.style.transform = `translateY(-50%) scale(${scale})`;
-    translateBtn.style.boxShadow = currentLanguage === "en" 
-      ? "0 4px 12px rgba(255, 107, 53, 0.4)"
-      : "0 4px 12px rgba(160, 82, 45, 0.4)";
+    translateBtn.style.boxShadow =
+      currentLanguage === "en"
+        ? "0 4px 12px rgba(255, 107, 53, 0.4)"
+        : "0 4px 12px rgba(160, 82, 45, 0.4)";
   };
 
   translateBtn.onmouseout = () => {
@@ -1140,7 +1697,7 @@ function injectTranslateButton(inputField) {
     e.preventDefault(); // Prevent context menu
     currentLanguage = currentLanguage === "en" ? "bn" : "en";
     updateButtonAppearance();
-    
+
     // Visual feedback
     translateBtn.style.transform = "translateY(-50%) scale(1.1)";
     setTimeout(() => {
@@ -1226,6 +1783,77 @@ function injectTranslateButton(inputField) {
   inputWrapper.appendChild(suggestBtn);
   inputWrapper.appendChild(translateBtn);
   inputWrapper.appendChild(suggestionsContainer);
+
+  // Create goals container at bottom of screen
+  const goalsContainer = document.createElement("div");
+  goalsContainer.id = "goals-container";
+  goalsContainer.style.cssText = `
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px;
+    background: #f9f9f9;
+    border-top: 1px solid #ddd;
+    z-index: 999;
+    justify-content: center;
+  `;
+
+  // Get all intentions
+  const allIntentions = [
+    { key: "get_better_price", text: "💰 Better Price" },
+    { key: "request_samples", text: "📦 Free Samples" },
+    { key: "ask_specifications", text: "📋 Specifications" },
+    { key: "request_moq", text: "📊 Negotiate MOQ" },
+    { key: "other", text: "💬 General" },
+  ];
+
+  // Add custom goals with separator
+  const customGoals = getCustomGoals();
+  if (customGoals.length > 0) {
+    allIntentions.push({ separator: true });
+    customGoals.forEach((goal) => {
+      allIntentions.push({ key: `custom_${goal.id}`, text: `🎯 ${goal.text}` });
+    });
+  }
+
+  // Create buttons for intentions
+  allIntentions.forEach((item) => {
+    if (item.separator) {
+      const separator = document.createElement("div");
+      separator.style.cssText = `
+        width: 1px;
+        height: 24px;
+        background: #ddd;
+        margin: 0 4px;
+      `;
+      goalsContainer.appendChild(separator);
+    } else {
+      const goalBtn = document.createElement("button");
+      goalBtn.textContent = item.text;
+      goalBtn.title = "Generate message for this goal";
+      goalBtn.style.cssText = `
+        background: #fff3e0;
+        border: 1px solid #ff9800;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        color: #e65100;
+        white-space: nowrap;
+      `;
+      goalBtn.onclick = () => {
+        generateAISuggestion(inputField, item.key);
+      };
+      goalsContainer.appendChild(goalBtn);
+    }
+  });
+
+  // Append goals container to body
+  document.body.appendChild(goalsContainer);
 }
 
 // Show intention modal to ask buyer what they want to achieve
@@ -1266,36 +1894,50 @@ function showIntentionModal(inputField) {
     flex-direction: column;
   `;
 
-  // Get custom goals
+  // Get all intentions
+  const allIntentions = [
+    { key: "get_better_price", text: "Get better price/discount" },
+    { key: "request_samples", text: "Request free samples" },
+    { key: "ask_specifications", text: "Ask for product specifications" },
+    { key: "request_moq", text: "Negotiate minimum order quantity" },
+    { key: "other", text: "General response" },
+  ];
+
+  // Add custom goals
   const customGoals = getCustomGoals();
+  if (customGoals.length > 0) {
+    customGoals.forEach((goal) => {
+      allIntentions.push({
+        key: `custom_${goal.id}`,
+        text: goal.text,
+        custom: true,
+      });
+    });
+  }
 
   // Build modal HTML
   let modalHTML = `
     <h3 style="margin: 0 0 15px 0; color: #333; flex-shrink: 0;">What do you want to achieve?</h3>
-    <div style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1;">
-      <button class="intention-option" data-intention="get_better_price">💰 Get better price/discount</button>
-      <button class="intention-option" data-intention="request_samples">📦 Request free samples</button>
-      <button class="intention-option" data-intention="ask_specifications">📋 Ask for product specifications</button>
-      <button class="intention-option" data-intention="request_moq">📊 Negotiate minimum order quantity</button>
-      <button class="intention-option" data-intention="other">💬 General response</button>`;
+    <div style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1;">`;
 
-  // Add custom goals section if any exist
-  if (customGoals.length > 0) {
-    modalHTML += `<div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px;">
-      <div style="font-size: 12px; color: #666; margin-bottom: 8px; font-weight: 500;">⭐️ Your Custom Goals:</div>`;
-
-    customGoals.forEach((goal) => {
-      modalHTML += `
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <button class="intention-option custom-goal" data-intention="custom_${goal.id}" style="flex: 1;">
-            🎯 ${goal.text}
-          </button>
-          <button class="delete-goal-btn" data-goal-id="${goal.id}" title="Delete this goal" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">×</button>
-        </div>`;
-    });
-
-    modalHTML += `</div>`;
-  }
+  allIntentions.forEach((intention) => {
+    const emoji =
+      intention.key === "get_better_price"
+        ? "💰"
+        : intention.key === "request_samples"
+        ? "📦"
+        : intention.key === "ask_specifications"
+        ? "📋"
+        : intention.key === "request_moq"
+        ? "📊"
+        : intention.key === "other"
+        ? "💬"
+        : "🎯";
+    const className = intention.custom
+      ? "intention-option custom-goal"
+      : "intention-option";
+    modalHTML += `<button class="${className}" data-intention="${intention.key}">${emoji} ${intention.text}</button>`;
+  });
 
   // Add custom goal input section
   modalHTML += `
@@ -1354,46 +1996,63 @@ function showIntentionModal(inputField) {
   );
 
   // Handle showing custom goal input section
-  showCustomSectionBtn.addEventListener("click", () => {
-    customGoalSection.style.display = "block";
-    showCustomSectionBtn.style.display = "none";
-    customGoalInput.focus();
-  });
+  if (showCustomSectionBtn) {
+    showCustomSectionBtn.addEventListener("click", () => {
+      if (customGoalSection) {
+        customGoalSection.style.display = "block";
+        showCustomSectionBtn.style.display = "none";
+        if (customGoalInput) customGoalInput.focus();
+      }
+    });
+  }
 
   // Handle canceling custom goal input
-  cancelCustomGoalBtn.addEventListener("click", () => {
-    customGoalSection.style.display = "none";
-    showCustomSectionBtn.style.display = "block";
-    customGoalInput.value = "";
-  });
+  if (cancelCustomGoalBtn) {
+    cancelCustomGoalBtn.addEventListener("click", () => {
+      if (customGoalSection) {
+        customGoalSection.style.display = "none";
+        if (showCustomSectionBtn) showCustomSectionBtn.style.display = "block";
+        if (customGoalInput) customGoalInput.value = "";
+      }
+    });
+  }
 
   // Handle adding custom goal
-  addCustomGoalBtn.addEventListener("click", () => {
-    const goalText = customGoalInput.value.trim();
-    if (!goalText) return;
+  if (addCustomGoalBtn) {
+    addCustomGoalBtn.addEventListener("click", () => {
+      if (customGoalInput) {
+        const goalText = customGoalInput.value.trim();
+        if (!goalText) return;
 
-    if (addCustomGoal(goalText)) {
-      // Success - refresh modal
-      modal.remove();
-      showIntentionModal(inputField);
-      showBookmarkNotification("Custom goal added! 🎯", "#4caf50");
-    } else {
-      // Check what went wrong
-      const existingGoals = getCustomGoals();
-      if (existingGoals.length >= 10) {
-        showBookmarkNotification("Maximum 10 custom goals allowed!", "#f44336");
-      } else {
-        showBookmarkNotification("Goal already exists!", "#ff9800");
+        if (addCustomGoal(goalText)) {
+          // Success - refresh modal
+          modal.remove();
+          showIntentionModal(inputField);
+          showBookmarkNotification("Custom goal added! 🎯", "#4caf50");
+        } else {
+          // Check what went wrong
+          const existingGoals = getCustomGoals();
+          if (existingGoals.length >= 10) {
+            showBookmarkNotification(
+              "Maximum 10 custom goals allowed!",
+              "#f44336"
+            );
+          } else {
+            showBookmarkNotification("Goal already exists!", "#ff9800");
+          }
+        }
       }
-    }
-  });
+    });
+  }
 
   // Handle Enter key in input
-  customGoalInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      addCustomGoalBtn.click();
-    }
-  });
+  if (customGoalInput) {
+    customGoalInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        if (addCustomGoalBtn) addCustomGoalBtn.click();
+      }
+    });
+  }
 
   // Handle intention selection and custom goal deletion
   modalContent.addEventListener("click", (e) => {
@@ -1408,14 +2067,6 @@ function showIntentionModal(inputField) {
 
       modal.remove();
       generateAISuggestion(inputField, intention);
-    } else if (e.target.classList.contains("delete-goal-btn")) {
-      e.stopPropagation();
-      const goalId = e.target.dataset.goalId;
-      deleteCustomGoal(goalId);
-      // Refresh modal
-      modal.remove();
-      showIntentionModal(inputField);
-      showBookmarkNotification("Custom goal deleted!", "#ff9800");
     } else if (e.target.id === "cancel-intention") {
       modal.remove();
     }
@@ -1459,6 +2110,7 @@ function setupMessageObserver() {
         scanForSellerMessages();
         scanForBuyerMessages();
         addIntentionButtons(); // Ensure intention buttons are added to new messages
+        addAutoNegotiationButtons(); // Ensure auto-negotiation buttons are added to new messages
       }, 500);
     }
   });
@@ -1711,26 +2363,16 @@ function showSmartSuggestions(suggestions, inputField) {
 
     container.style.display = "block";
 
-    // Add click outside to close
-    const handleClickOutside = (event) => {
-      if (!container.contains(event.target) && event.target !== inputField) {
-        container.style.display = "none";
-        document.removeEventListener("click", handleClickOutside);
-        document.removeEventListener("keydown", handleEscapeKey);
-      }
-    };
-
+    // Add escape key to close
     const handleEscapeKey = (event) => {
       if (event.key === "Escape") {
         container.style.display = "none";
-        document.removeEventListener("click", handleClickOutside);
         document.removeEventListener("keydown", handleEscapeKey);
       }
     };
 
-    // Add event listeners after a short delay to avoid immediate closing
+    // Add event listener after a short delay to avoid immediate closing
     setTimeout(() => {
-      document.addEventListener("click", handleClickOutside);
       document.addEventListener("keydown", handleEscapeKey);
     }, 100);
   }
@@ -1766,3 +2408,12 @@ if (document.readyState === "loading") {
 
 // Also watch for dynamic content
 setTimeout(init, 2000);
+
+// Expose functions globally for testing
+window.startAutoNegotiation = startAutoNegotiation;
+window.showNegotiationSimulation = showNegotiationSimulation;
+window.runNegotiationSimulation = runNegotiationSimulation;
+window.generateBuyerResponse = generateBuyerResponse;
+window.generateSellerResponse = generateSellerResponse;
+window.shouldEndNegotiation = shouldEndNegotiation;
+window.analyzeNegotiationResult = analyzeNegotiationResult;

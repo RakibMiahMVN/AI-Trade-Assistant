@@ -186,32 +186,54 @@
         transform: translateY(-1px);
       }
 
-      .mode-toggle {
-        display: flex;
-        gap: 10px;
-      }
-
-      .mode-btn {
-        padding: 6px 12px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        background: transparent;
-        color: white;
-        border-radius: 20px;
-        cursor: pointer;
-        font-size: 11px;
-        font-weight: 500;
-        transition: all 0.3s;
-      }
-
-      .mode-btn.active {
+      .product-card {
         background: white;
-        color: #ff6b35;
-        border-color: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e0e0e0;
+        display: flex;
+        gap: 16px;
+        align-items: center;
       }
 
-      .mode-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.5);
+      .product-image {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #ff6b35, #ff8c42);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        flex-shrink: 0;
+      }
+
+      .product-info {
+        flex: 1;
+      }
+
+      .product-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+      }
+
+      .product-details {
+        font-size: 14px;
+        color: #666;
+        line-height: 1.4;
+      }
+
+      .product-price {
+        font-size: 18px;
+        font-weight: bold;
+        color: #ff6b35;
+        margin-top: 8px;
       }
     </style>
   </head>
@@ -280,6 +302,11 @@
         );
         const container = document.getElementById("chat-messages");
 
+        // Add product card first if there are messages
+        if (messages.length > 0) {
+          addProductCard();
+        }
+
         messages.forEach((msg) => {
           addMessageToDOM(msg.text, msg.type, msg.timestamp, false);
         });
@@ -327,6 +354,26 @@
         localStorage.setItem("chatMessages", JSON.stringify(messages));
       }
 
+      // Add product card to DOM
+      function addProductCard() {
+        const container = document.getElementById("chat-messages");
+        const productCard = document.createElement("div");
+        productCard.className = "product-card";
+        productCard.innerHTML = `
+          <div class="product-image">📱</div>
+          <div class="product-info">
+            <div class="product-title">iPhone 15 Pro Max Phone Case</div>
+            <div class="product-details">
+              High-quality TPU + PC material<br>
+              Compatible with iPhone 15 Pro Max<br>
+              MOQ: 500 pieces | Lead time: 15 days
+            </div>
+            <div class="product-price">$2.50/piece (FOB China)</div>
+          </div>
+        `;
+        container.appendChild(productCard);
+      }
+
       // Add message to DOM
       function addMessageToDOM(text, type, timestamp = null, save = true) {
         const container = document.getElementById("chat-messages");
@@ -361,13 +408,16 @@
 
       // Initialize with sample messages
       function initializeSampleMessages() {
+        // Add product card first
+        addProductCard();
+
         const sampleMessages = [
           {
-            text: "您好！我想咨询一下这款手机壳的价格和起订量。",
+            text: "您好！我想咨询一下这款iPhone 15 Pro Max手机壳的价格和起订量。",
             type: "user",
           },
           {
-            text: "您好！这款手机壳单价是2.5元，起订量是500个。价格包含运费到您指定的港口。",
+            text: "您好！这款iPhone 15 Pro Max手机壳单价是2.5美元，起订量是500个。价格包含运费到您指定的港口。",
             type: "seller",
           },
           {
@@ -375,7 +425,7 @@
             type: "user",
           },
           {
-            text: "100个可以接受，但单价会调整到3.2元。我们的产品质量很好，客户反馈都很好。",
+            text: "100个可以接受，但单价会调整到3.2美元。我们的产品质量很好，客户反馈都很好。",
             type: "seller",
           },
         ];
